@@ -1,0 +1,140 @@
+package engine
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/rztaylor/GoDotFiles/internal/apps"
+	"github.com/rztaylor/GoDotFiles/internal/platform"
+)
+
+// Linker handles the creation and management of symlinks for dotfiles.
+type Linker struct {
+	// ConflictStrategy determines how to handle existing files at the target location.
+	// Options: "backup_and_replace", "replace", "error", "prompt" (prompt not implemented here, assumed resolved upstream)
+	ConflictStrategy string
+}
+
+// NewLinker creates a new Linker with the given conflict strategy.
+func NewLinker(strategy string) *Linker {
+	return &Linker{ConflictStrategy: strategy}
+}
+
+// Link processes a single dotfile, creating a symlink from target to source.
+// source: path relative to repo root (e.g. "git/.gitconfig")
+// target: absolute path or path relative to home (e.g. "~/.gitconfig")
+// gdfDir: absolute path to GDF repo root
+func (l *Linker) Link(dotfile apps.Dotfile, gdfDir string) error {
+	sourcePath := filepath.Join(gdfDir, "dotfiles", dotfile.Source)
+	targetPath := platform.ExpandPath(dotfile.Target)
+
+	// Handle secrets (skip or warn?)
+	if dotfile.Secret {
+		fmt.Printf("Warning: Linking secret file %s - ensure it's gitignored\n", dotfile.Target)
+	}
+
+	// Validate source exists
+	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+		return fmt.Errorf("source file not found: %s", sourcePath)
+	}
+
+	// Check if directory structure exists for target
+	targetDir := filepath.Dir(targetPath)
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return fmt.Errorf("creating directory for target: %w", err)
+	}
+
+	// Check target state
+	info, err := os.Lstat(targetPath)
+	if err == nil {
+		// Target exists
+		// 1. Check if it's already a symlink to the correct source
+		if info.Mode()&os.ModeSymlink != 0 {
+			linkDest, err := os.Readlink(targetPath)
+			if err != nil {
+				return fmt.Errorf("reading symlink: %w", err)
+			}
+			if linkDest == sourcePath {
+				// Already linked correctly
+				return nil
+			}
+		}
+
+		// 2. Handle conflict
+		if err := l.handleConflict(targetPath); err != nil {
+			return err
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("checking target: %w", err)
+	}
+
+	// Create symlink
+	if err := os.Symlink(sourcePath, targetPath); err != nil {
+		return fmt.Errorf("creating symlink: %w", err)
+	}
+
+	return nil
+}
+
+// Unlink removes the symlink for a dotfile.
+func (l *Linker) Unlink(dotfile apps.Dotfile) error {
+	targetPath := platform.ExpandPath(dotfile.Target)
+
+	info, err := os.Lstat(targetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // Already gone
+		}
+		return err
+	}
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		return os.Remove(targetPath)
+	}
+
+	// If it's not a symlink, we leave it alone (it might be a real file)
+	return nil
+}
+
+func (l *Linker) handleConflict(path string) error {
+	switch l.ConflictStrategy {
+	case "error":
+		return fmt.Errorf("target already exists: %s", path)
+	case "replace", "force":
+		if err := os.RemoveAll(path); err != nil {
+			return fmt.Errorf("removing existing target: %w", err)
+		}
+	case "backup_and_replace":
+		// Cycle backups: .bak -> .bak.1 -> .bak.2 -> .bak.3 (keep last 3)
+		const maxBackups = 3
+		for i := maxBackups - 1; i >= 0; i-- {
+			var oldPath, newPath string
+			if i == 0 {
+				oldPath = path + ".gdf.bak"
+			} else {
+				oldPath = fmt.Sprintf("%s.gdf.bak.%d", path, i)
+			}
+			newPath = fmt.Sprintf("%s.gdf.bak.%d", path, i+1)
+
+			if _, err := os.Stat(oldPath); err == nil {
+				if i == maxBackups-1 {
+					// Remove oldest backup
+					_ = os.Remove(oldPath)
+				} else {
+					// Rename to next number
+					_ = os.Rename(oldPath, newPath)
+				}
+			}
+		}
+		// Move current file to .bak
+		backupPath := path + ".gdf.bak"
+		if err := os.Rename(path, backupPath); err != nil {
+			return fmt.Errorf("backing up existing target: %w", err)
+		}
+	default:
+		// Default to error for safety
+		return fmt.Errorf("unknown conflict strategy '%s', defaulting to error: file exists %s", l.ConflictStrategy, path)
+	}
+	return nil
+}
