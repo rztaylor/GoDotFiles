@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/rztaylor/GoDotFiles/internal/schema"
 )
 
 func TestLoadProfile(t *testing.T) {
@@ -18,6 +20,7 @@ func TestLoadProfile(t *testing.T) {
 		{
 			name: "minimal profile",
 			yaml: `
+kind: Profile/v1
 name: base
 `,
 			wantName: "base",
@@ -25,6 +28,7 @@ name: base
 		{
 			name: "profile with apps",
 			yaml: `
+kind: Profile/v1
 name: sre
 description: SRE toolkit
 apps:
@@ -38,6 +42,7 @@ apps:
 		{
 			name: "profile with includes",
 			yaml: `
+kind: Profile/v1
 name: work
 includes:
   - base
@@ -52,6 +57,7 @@ apps:
 		{
 			name: "profile with conditions",
 			yaml: `
+kind: Profile/v1
 name: dev
 apps:
   - git
@@ -66,8 +72,9 @@ conditions:
 			wantApps: 1,
 		},
 		{
-			name:    "invalid yaml",
-			yaml:    `name: [invalid`,
+			name: "invalid yaml",
+			yaml: `kind: Profile/v1
+name: [invalid`,
 			wantErr: true,
 		},
 	}
@@ -109,8 +116,10 @@ func TestLoadAllProfiles(t *testing.T) {
 
 	// Create profile directories
 	profiles := map[string]string{
-		"base": `name: base`,
-		"sre":  `name: sre`,
+		"base": `kind: Profile/v1
+name: base`,
+		"sre": `kind: Profile/v1
+name: sre`,
 	}
 
 	for name, content := range profiles {
@@ -148,7 +157,7 @@ func TestProfile_Validate(t *testing.T) {
 	}{
 		{
 			name:    "valid profile",
-			profile: Profile{Name: "base"},
+			profile: Profile{TypeMeta: schema.TypeMeta{Kind: "Profile/v1"}, Name: "base"},
 		},
 		{
 			name:    "missing name",
@@ -197,5 +206,9 @@ func TestProfile_Save(t *testing.T) {
 	}
 	if len(loaded.Apps) != len(profile.Apps) {
 		t.Errorf("Apps = %v, want %v", loaded.Apps, profile.Apps)
+	}
+
+	if loaded.Kind != "Profile/v1" {
+		t.Errorf("Kind = %q, want Profile/v1", loaded.Kind)
 	}
 }

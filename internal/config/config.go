@@ -6,10 +6,14 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/rztaylor/GoDotFiles/internal/schema"
 )
 
 // Config represents the global GDF configuration (~/.gdf/config.yaml).
 type Config struct {
+	schema.TypeMeta `yaml:",inline"`
+
 	// Git contains repository settings.
 	Git *GitConfig `yaml:"git,omitempty"`
 
@@ -122,6 +126,10 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("parsing config YAML: %w", err)
 	}
 
+	if err := cfg.ValidateKind("Config"); err != nil {
+		return nil, fmt.Errorf("validating config version: %w", err)
+	}
+
 	return &cfg, nil
 }
 
@@ -132,6 +140,7 @@ func LoadConfigFromDir(dir string) (*Config, error) {
 
 // Save writes the config to a file.
 func (c *Config) Save(path string) error {
+	c.Kind = "Config/v1"
 	data, err := yaml.Marshal(c)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)

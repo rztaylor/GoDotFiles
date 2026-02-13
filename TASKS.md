@@ -5,13 +5,17 @@
 
 ---
 
+### Misc tasks
+
+<!-- None pending -->
+
 ### Phase 2: User Experience
 
-#### 2.0 UI Foundation (Charmboard & Styles)
+#### 2.1 UI Foundation (Charmboard & Styles)
 - [ ] Evaluate & Integrate Charm libraries (Bubble Tea, Lip Gloss, etc)
 - [ ] Create reusable UI components (spinner, list, input, confirm, etc)
 
-#### 2.1 Core App Library (Embedded Recipes)
+#### 2.2 Core App Library (Embedded Recipes)
 - [ ] Create library recipe schema
 - [ ] Add `mac-preferences` example (package-less bundle)
 - [ ] Add 10 core recipes (git, zsh, vim, tmux, etc.)
@@ -22,26 +26,26 @@
 - [ ] Design Recipe Namespace scheme (local vs core vs remote)
 - [ ] Implement Recipe Merging logic (user overrides)
 
-#### 2.2 Interactive Wizards
+#### 2.3 Interactive Wizards
 - [ ] Implement interactive `gdf setup` wizard
 - [ ] Add interactive mode to `gdf add`
 - [ ] Add interactive mode to `gdf track`
 
-#### 2.3 Status & Doctor
+#### 2.4 Status & Doctor
 - [ ] Implement rich `gdf status` output
 - [ ] Implement `gdf doctor` health check
 - [ ] Implement `gdf fix` auto-repair
 - [ ] Implement `gdf validate` for YAML checking
 
-#### 2.4 Shell Completions
+#### 2.5 Shell Completions
 - [ ] Add --help to provide inline help on available commands, command usage, options, flags etc. 
 
-#### 2.5 Rollback & Cleanup
+#### 2.6 Rollback & Cleanup
 - [ ] Implement operation logging for all file/package actions
 - [ ] Implement `gdf rollback` command (undo last operation)
 - [ ] Implement `Unlink` in engine for clean removal of symlinks
 
-#### 2.6 App Lifecycle Management
+#### 2.7 App Lifecycle Management
 - [ ] Implement `Uninstall(pkg)` in `packages.Manager` interface
 - [ ] Implement `gdf remove --uninstall` to prompt for package removal
 - [ ] Implement "Orphaned App" detection (app YAMLs not in any profile)
@@ -54,9 +58,12 @@
 
 ### Phase 3: Advanced Features
 
+- [ ] Check for new versions (from github) and offer to update.
 - [ ] Remote Recipe Ecosystem (Git-based Registry & Trust Model)
 - [ ] Companion apps & plugin support
 - [ ] Template rendering with documented variables
+- [ ] Conditional dotfile linking (evaluate 'when' field)
+    - **User Story**: As a GDF user, I want to track OS-specific versions of a dotfile (e.g., `gitconfig.macos`, `gitconfig.linux`) and have them linked to the same local target (e.g., `~/.gitconfig.os`) depending on the current platform.
 - [ ] Function management (`gdf fn` commands)
 - [ ] Pre/post hooks with error handling options
 - [ ] Recipe import/export (`gdf recipe`)

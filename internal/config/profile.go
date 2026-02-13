@@ -6,10 +6,14 @@ import (
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/rztaylor/GoDotFiles/internal/schema"
 )
 
 // Profile represents a profile definition (profiles/*/profile.yaml).
 type Profile struct {
+	schema.TypeMeta `yaml:",inline"`
+	// Name is the unique identifier for this profile (required).
 	// Name is the unique identifier for this profile (required).
 	Name string `yaml:"name"`
 
@@ -51,6 +55,10 @@ func LoadProfile(path string) (*Profile, error) {
 	var profile Profile
 	if err := yaml.Unmarshal(data, &profile); err != nil {
 		return nil, fmt.Errorf("parsing profile YAML: %w", err)
+	}
+
+	if err := profile.ValidateKind("Profile"); err != nil {
+		return nil, fmt.Errorf("validating profile version: %w", err)
 	}
 
 	return &profile, nil
@@ -96,6 +104,7 @@ func LoadAllProfiles(profilesDir string) ([]*Profile, error) {
 
 // Save writes the profile to a file.
 func (p *Profile) Save(path string) error {
+	p.Kind = "Profile/v1"
 	data, err := yaml.Marshal(p)
 	if err != nil {
 		return fmt.Errorf("marshaling profile: %w", err)

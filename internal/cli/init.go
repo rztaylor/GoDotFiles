@@ -153,6 +153,7 @@ state.yaml
 func createInitialConfig(gdfDir string) error {
 	content := `# GDF Configuration
 # See: https://github.com/user/gdf/docs/reference/config.md
+kind: Config/v1
 
 shell: zsh
 
@@ -178,6 +179,7 @@ func createDefaultProfile(gdfDir string) error {
 	}
 
 	content := `# Default Profile
+kind: Profile/v1
 name: default
 description: Default profile with common apps
 

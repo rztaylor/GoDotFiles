@@ -47,8 +47,8 @@ gdf push
 
 ## Development
 
-See [Contributing Guide](docs/contributing/development.md) and [GEMINI.md](GEMINI.md) for AI-assisted development guidelines.
+See [GEMINI.md](GEMINI.md) for AI-assisted development guidelines.
 
 ## License
 
-MIT
+Apache 2.0

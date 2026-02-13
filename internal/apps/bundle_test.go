@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/rztaylor/GoDotFiles/internal/schema"
 )
 
 func TestLoad(t *testing.T) {
@@ -16,13 +18,14 @@ func TestLoad(t *testing.T) {
 	}{
 		{
 			name:     "minimal bundle",
-			yaml:     `name: kubectl`,
+			yaml:     "kind: App/v1\nname: kubectl",
 			wantName: "kubectl",
 			wantDeps: nil,
 		},
 		{
 			name: "bundle with dependencies",
 			yaml: `
+kind: App/v1
 name: kubectl-neat
 description: Clean up kubectl output
 dependencies:
@@ -35,6 +38,7 @@ dependencies:
 		{
 			name: "package-less bundle",
 			yaml: `
+kind: App/v1
 name: mac-preferences
 description: macOS system preferences
 hooks:
@@ -47,6 +51,7 @@ hooks:
 		{
 			name: "full bundle",
 			yaml: `
+kind: App/v1
 name: git
 description: Git version control
 package:
@@ -71,7 +76,7 @@ companions:
 		},
 		{
 			name:    "invalid yaml",
-			yaml:    `name: [invalid`,
+			yaml:    "kind: App/v1\nname: [invalid",
 			wantErr: true,
 		},
 	}
@@ -115,8 +120,8 @@ func TestLoadAll(t *testing.T) {
 
 	// Create test files
 	files := map[string]string{
-		"kubectl.yaml": "name: kubectl",
-		"git.yaml":     "name: git",
+		"kubectl.yaml": "kind: App/v1\nname: kubectl",
+		"git.yaml":     "kind: App/v1\nname: git",
 		"README.md":    "# Not a YAML file",
 	}
 	for name, content := range files {
@@ -170,6 +175,10 @@ func TestBundle_Save(t *testing.T) {
 	if len(loaded.Dependencies) != len(bundle.Dependencies) {
 		t.Errorf("Dependencies = %v, want %v", loaded.Dependencies, bundle.Dependencies)
 	}
+
+	if loaded.Kind != "App/v1" {
+		t.Errorf("Kind = %q, want App/v1", loaded.Kind)
+	}
 }
 
 func TestBundle_Validate(t *testing.T) {
@@ -180,11 +189,12 @@ func TestBundle_Validate(t *testing.T) {
 	}{
 		{
 			name:   "valid minimal bundle",
-			bundle: Bundle{Name: "kubectl"},
+			bundle: Bundle{TypeMeta: schema.TypeMeta{Kind: "App/v1"}, Name: "kubectl"},
 		},
 		{
 			name: "valid bundle with all fields",
 			bundle: Bundle{
+				TypeMeta:     schema.TypeMeta{Kind: "App/v1"},
 				Name:         "kubectl",
 				Description:  "Kubernetes CLI",
 				Dependencies: []string{"kubernetes"},

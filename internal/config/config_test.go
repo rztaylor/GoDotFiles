@@ -17,7 +17,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			name:         "empty config returns defaults",
-			yaml:         "",
+			yaml:         "kind: Config/v1",
 			wantShell:    "",
 			wantAliases:  "last_wins",
 			wantDotfiles: "error",
@@ -25,6 +25,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "full config",
 			yaml: `
+kind: Config/v1
 git:
   remote: git@github.com:user/dotfiles.git
   branch: main
@@ -47,6 +48,7 @@ security:
 		{
 			name: "minimal config",
 			yaml: `
+kind: Config/v1
 shell: bash
 `,
 			wantShell:    "bash",
@@ -54,8 +56,9 @@ shell: bash
 			wantDotfiles: "error",
 		},
 		{
-			name:    "invalid yaml",
-			yaml:    `shell: [invalid`,
+			name: "invalid yaml",
+			yaml: `kind: Config/v1
+shell: [invalid`,
 			wantErr: true,
 		},
 	}
@@ -131,6 +134,10 @@ func TestConfig_Save(t *testing.T) {
 
 	if loaded.Shell != cfg.Shell {
 		t.Errorf("Shell = %q, want %q", loaded.Shell, cfg.Shell)
+	}
+
+	if loaded.Kind != "Config/v1" {
+		t.Errorf("Kind = %q, want Config/v1", loaded.Kind)
 	}
 }
 

@@ -2,8 +2,18 @@
 
 All notable changes to GDF will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.6.0] - unreleased
+
+### Added
+
+- **Schema Versioning**: Enforced `kind` field (e.g., `App/v1`) in all YAML files to support future schema evolution.
+- **Restore Command**: Added `gdf restore` to revert changes, restore files, and export aliases for safe uninstallation.
+- **Version Command**: Added `gdf version` to output build information.
+- **License**: Switched to Apache 2.0 License.
+- **Docs**: Cleaned up broken links in documentation.
+
 
 ## [0.5.0] - 2026-02-13
 
@@ -68,7 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### For AI Agents
 
 When completing a task:
-1. Add entry under `[Unreleased]` in appropriate category
-2. Use imperative mood ("Add" not "Added")
-3. Reference issue/PR numbers if applicable
-4. Keep entries concise but descriptive
+1. Only include user-facing changes rather than internal changes.
+2. Add entry under `[Unreleased]` in appropriate category
+3. Use imperative mood ("Add" not "Added")
+4. Reference issue/PR numbers if applicable
+5. Keep entries concise but descriptive

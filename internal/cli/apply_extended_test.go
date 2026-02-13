@@ -10,6 +10,7 @@ import (
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/engine"
+	"github.com/rztaylor/GoDotFiles/internal/schema"
 )
 
 func TestApplyMultipleProfiles(t *testing.T) {
@@ -33,8 +34,9 @@ func TestApplyMultipleProfiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	baseProfile := &config.Profile{
-		Name: "base",
-		Apps: []string{"git"},
+		TypeMeta: schema.TypeMeta{Kind: "Profile/v1"},
+		Name:     "base",
+		Apps:     []string{"git"},
 	}
 	if err := baseProfile.Save(filepath.Join(gdfDir, "profiles", "base", "profile.yaml")); err != nil {
 		t.Fatal(err)
@@ -45,6 +47,7 @@ func TestApplyMultipleProfiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	workProfile := &config.Profile{
+		TypeMeta: schema.TypeMeta{Kind: "Profile/v1"},
 		Name:     "work",
 		Includes: []string{"base"},
 		Apps:     []string{"kubectl"},
@@ -55,7 +58,10 @@ func TestApplyMultipleProfiles(t *testing.T) {
 
 	// Create app bundles
 	for _, appName := range []string{"git", "kubectl"} {
-		bundle := &apps.Bundle{Name: appName}
+		bundle := &apps.Bundle{
+			TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+			Name:     appName,
+		}
 		if err := bundle.Save(filepath.Join(gdfDir, "apps", appName+".yaml")); err != nil {
 			t.Fatal(err)
 		}
@@ -102,7 +108,8 @@ func TestApplyDryRun(t *testing.T) {
 	}
 
 	bundle := &apps.Bundle{
-		Name: "testapp",
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "testapp",
 		Dotfiles: []apps.Dotfile{
 			{Source: "testapp/config", Target: "~/.testrc"},
 		},
@@ -156,12 +163,17 @@ func TestApplyWithDependencies(t *testing.T) {
 	}
 
 	// Create apps with dependencies: kubectl depends on base
-	baseBundle := &apps.Bundle{Name: "base"}
+	// Create apps with dependencies: kubectl depends on base
+	baseBundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "base",
+	}
 	if err := baseBundle.Save(filepath.Join(gdfDir, "apps", "base.yaml")); err != nil {
 		t.Fatal(err)
 	}
 
 	kubectlBundle := &apps.Bundle{
+		TypeMeta:     schema.TypeMeta{Kind: "App/v1"},
 		Name:         "kubectl",
 		Dependencies: []string{"base"},
 	}
@@ -225,6 +237,7 @@ func TestApplyCircularDependency(t *testing.T) {
 
 	// Create apps with circular dependency
 	appA := &apps.Bundle{
+		TypeMeta:     schema.TypeMeta{Kind: "App/v1"},
 		Name:         "app-a",
 		Dependencies: []string{"app-b"},
 	}
@@ -233,6 +246,7 @@ func TestApplyCircularDependency(t *testing.T) {
 	}
 
 	appB := &apps.Bundle{
+		TypeMeta:     schema.TypeMeta{Kind: "App/v1"},
 		Name:         "app-b",
 		Dependencies: []string{"app-a"},
 	}

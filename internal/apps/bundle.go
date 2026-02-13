@@ -1,9 +1,15 @@
 package apps
 
+import (
+	"github.com/rztaylor/GoDotFiles/internal/schema"
+)
+
 // Bundle represents an app bundle - the core unit in GDF.
+// A bundle groups together a package, its configuration files (dotfiles),
 // A bundle groups together a package, its configuration files (dotfiles),
 // shell aliases/functions, and lifecycle hooks.
 type Bundle struct {
+	schema.TypeMeta `yaml:",inline"`
 	// Name is the unique identifier for this app bundle (required).
 	Name string `yaml:"name"`
 

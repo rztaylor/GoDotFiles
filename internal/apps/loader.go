@@ -20,6 +20,10 @@ func Load(path string) (*Bundle, error) {
 		return nil, fmt.Errorf("parsing bundle YAML: %w", err)
 	}
 
+	if err := bundle.ValidateKind("App"); err != nil {
+		return nil, fmt.Errorf("validating app version: %w", err)
+	}
+
 	return &bundle, nil
 }
 
@@ -53,6 +57,7 @@ func LoadAll(dir string) ([]*Bundle, error) {
 
 // Save writes an app bundle to a YAML file.
 func (b *Bundle) Save(path string) error {
+	b.Kind = "App/v1"
 	data, err := yaml.Marshal(b)
 	if err != nil {
 		return fmt.Errorf("marshaling bundle: %w", err)

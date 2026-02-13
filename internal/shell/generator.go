@@ -238,3 +238,20 @@ func extractCommand(cmd string) string {
 	}
 	return cmd
 }
+
+// ExportAliases generates a file containing all aliases from bundles and global aliases.
+func (g *Generator) ExportAliases(bundles []*apps.Bundle, globalAliases map[string]string, outputPath string) error {
+	aliases := g.generateAliases(bundles, globalAliases)
+	if aliases == "" {
+		aliases = "# No aliases found\n"
+	}
+
+	// Add header
+	content := "# Aliases exported by GDF restore\n" + aliases
+
+	// Write to file
+	if err := os.WriteFile(outputPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("writing aliases file: %w", err)
+	}
+	return nil
+}

@@ -137,6 +137,7 @@ cmd/gdf/main.go
 ## Related Documentation
 
 - [Component Details](components.md)
+- [Versioning Strategy](versioning.md)
 - [UI Style Guide](../reference/ui-style-guide.md)
 - [YAML Schemas](../reference/yaml-schemas.md)
 - [CLI Reference](../reference/cli.md)

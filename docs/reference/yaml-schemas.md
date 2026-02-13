@@ -7,6 +7,7 @@ This document defines the YAML schemas for gdf configuration files.
 ## App Bundle Schema (`apps/*.yaml`)
 
 ```yaml
+kind: App/v1              # Required: resource type and version
 name: string              # Required: app identifier
 description: string       # Optional: human-readable description
 
@@ -129,6 +130,7 @@ plugins:
 ### Azure CLI - Different Install Methods
 
 ```yaml
+kind: App/v1
 name: azure-cli
 description: Azure command-line interface
 
@@ -157,6 +159,7 @@ dotfiles:
 ### MySQL Client - OS-Specific Paths
 
 ```yaml
+kind: App/v1
 name: mysql-client
 description: MySQL command-line client
 
@@ -176,6 +179,7 @@ dotfiles:
 ### kubectl - Conditional Config
 
 ```yaml
+kind: App/v1
 name: kubectl
 description: Kubernetes CLI
 
@@ -253,6 +257,7 @@ package:
 ## Profile Schema (`profile.yaml`)
 
 ```yaml
+kind: Profile/v1          # Required
 name: string              # Required: profile identifier
 description: string       # Optional: description
 includes:                 # Include other profiles
@@ -307,6 +312,7 @@ aliases:
 ## Global Config Schema (`config.yaml`)
 
 ```yaml
+kind: Config/v1           # Required
 # Repository settings
 git:
   remote: string          # Git remote URL
@@ -340,6 +346,7 @@ security:
 > This file is **LOCAL ONLY** and automatically gitignored. State does not sync across machines.
 
 ```yaml
+kind: State/v1
 # Applied profile tracking
 applied_profiles:
   - name: string              # Profile name
@@ -353,6 +360,7 @@ last_applied: timestamp       # When any profile was last applied (RFC3339 forma
 ### Example
 
 ```yaml
+kind: State/v1
 applied_profiles:
   - name: base
     apps:

@@ -74,6 +74,19 @@ Before completing any change:
 - [ ] Error messages are user-friendly
 - [ ] CLI help text is clear and complete
 
+### 6. Professional Code Comments
+
+- Comments must be **factual** and **professional**.
+- Explain **WHY** code exists, not **HOW** it works (the code explains the how).
+- **DO NOT** write "thinking" or "chain-of-thought" comments (e.g., `// I think this should work`, `// trying to fix bug`).
+- **DO NOT** use speculative language (e.g., "maybe", "probably", "unsure").
+- Remove commented-out code before merging.
+
+### 7. Schema Versioning
+
+All YAML files (except simple lists like `tasks.md`) MUST include a `kind` field following the format `<Type>/<Version>` (e.g., `App/v1`).
+Refer to `docs/architecture/versioning.md` for details.
+
 ## File Organization
 
 ### Key Directories
@@ -95,15 +108,17 @@ Before completing any change:
 
 1. Create/update tests in `*_test.go`
 2. Implement in appropriate `internal/` package
-3. Add CLI command in `internal/cli/`
-4. Update docs in `docs/`
-5. Run full test suite
+3. Ensure data structures implement `schema.TypeMeta`
+4. Add CLI command in `internal/cli/`
+5. Update docs in `docs/`
+6. Run full test suite
 
 ## Library Recipes
 
 Recipes in `internal/library/` should:
 
 - Include package definitions for brew, apt, dnf minimum
+- Include `kind: App/v1` in the YAML definition
 - Suggest common aliases (keep it reasonable, not exhaustive)
 - Include shell completions if available
 - Be tested on macOS and Ubuntu

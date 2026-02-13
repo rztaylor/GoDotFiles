@@ -122,3 +122,73 @@ func copyFile(src, dst string) error {
 	}
 	return os.WriteFile(dst, data, 0644)
 }
+
+// RestoreSourceLine replaces the GDF source line with a line sourcing the alias file.
+func (i *Injector) RestoreSourceLine(aliasPath string, shellType ShellType) error {
+	rcPath := i.getRCPath(shellType)
+	if rcPath == "" {
+		return fmt.Errorf("cannot determine RC file for shell type: %s", shellType)
+	}
+
+	content, err := os.ReadFile(rcPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // No RC file, nothing to do
+		}
+		return err
+	}
+
+	lines := strings.Split(string(content), "\n")
+	var newLines []string
+	found := false
+
+	// Define what we are looking for
+	oldIdentifier := ".gdf/generated/init.sh"
+	newSourceLine := fmt.Sprintf("[ -f %s ] && source %s", aliasPath, aliasPath)
+
+	skipNext := false
+	for idx, line := range lines {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+
+		trimmed := strings.TrimSpace(line)
+
+		// Case 1: Comment followed by source line
+		if trimmed == sourceLineComment {
+			if idx+1 < len(lines) && strings.Contains(lines[idx+1], oldIdentifier) {
+				newLines = append(newLines, "# Added by gdf restore")
+				newLines = append(newLines, newSourceLine)
+				skipNext = true
+				found = true
+				continue
+			}
+		}
+
+		// Case 2: Source line without comment (or we missed the comment)
+		if strings.Contains(trimmed, oldIdentifier) && strings.Contains(trimmed, "source") {
+			if !found {
+				newLines = append(newLines, "# Added by gdf restore")
+				newLines = append(newLines, newSourceLine)
+				found = true
+			}
+			continue
+		}
+
+		newLines = append(newLines, line)
+	}
+
+	if !found {
+		// If GDF integration wasn't found, append the new alias loading
+		newLines = append(newLines, "")
+		newLines = append(newLines, "# Added by gdf restore")
+		newLines = append(newLines, newSourceLine)
+	}
+
+	output := strings.Join(newLines, "\n")
+	if err := os.WriteFile(rcPath, []byte(output), 0644); err != nil {
+		return fmt.Errorf("writing RC file: %w", err)
+	}
+	return nil
+}

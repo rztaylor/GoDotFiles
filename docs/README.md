@@ -17,20 +17,22 @@ Welcome to the GDF (Go Dotfiles) documentation.
 ### Reference
 
 - [CLI Commands](reference/cli.md) - Complete command reference
-- [Configuration](reference/config.md) - Config file formats
 - [YAML Schemas](reference/yaml-schemas.md) - Full YAML specifications
-- [Library](reference/library.md) - Built-in app recipes
+<!-- - [Configuration](reference/config.md) - Config file formats (Coming Soon) -->
+<!-- - [Library](reference/library.md) - Built-in app recipes (Coming Soon) -->
 
-### For Contributors
+### For Contributors (Coming Soon)
 
+<!--
 - [Development Setup](contributing/development.md) - Set up dev environment
 - [Testing](contributing/testing.md) - Testing guidelines
 - [Contributing Recipes](contributing/recipes.md) - Add new app recipes
 - [Style Guide](contributing/style-guide.md) - Code conventions
+-->
 
 ### Architecture
 
 - [Overview](architecture/overview.md) - High-level design
 - [Components](architecture/components.md) - Internal packages
-- [Data Flow](architecture/data-flow.md) - How data moves through the system
 - [Decisions](architecture/decisions.md) - Architecture Decision Records
+<!-- - [Data Flow](architecture/data-flow.md) - How data moves through the system (Coming Soon) -->
