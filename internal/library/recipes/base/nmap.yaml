@@ -1,0 +1,8 @@
+kind: Recipe/v1
+name: nmap
+description: Network mapper
+package:
+  brew: nmap
+  apt:
+    name: nmap
+  dnf: nmap

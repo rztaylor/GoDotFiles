@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: gcc
+description: GNU Compiler Collection
+package:
+  brew: gcc
+  apt:
+    name: gcc
+  dnf: gcc
+shell:
+  aliases:
+    cpp: g++
+

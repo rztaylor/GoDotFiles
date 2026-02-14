@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: dog
+description: Command-line DNS client
+package:
+  brew: dog
+  apt:
+    name: dog
+  dnf: dog
+shell:
+  aliases:
+    dig: dog
+

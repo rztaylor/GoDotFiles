@@ -1,0 +1,17 @@
+kind: Recipe/v1
+name: python
+description: Interpreted, interactive, object-oriented programming language
+package:
+  brew: python
+  apt:
+    name: python3
+  dnf: python3
+dotfiles:
+  - source: pip.conf
+    target: .config/pip/pip.conf
+shell:
+  aliases:
+    py: python3
+    pip: pip3
+    venv: python3 -m venv .venv && source .venv/bin/activate
+

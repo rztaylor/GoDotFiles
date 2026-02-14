@@ -12,6 +12,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+## [0.7.0] - 2026-02-14
+
+### Added
+
+- **App Library**: Expanded core library with 30+ new app recipes (Languages, DevOps, Utilities) including "Base Profile" tools like git, zsh, starship.
+- **Library CLI**: New `gdf library list` and `describe` commands to explore embedded recipes.
+- **Interactive Add**: `gdf add` now prompts to use recipes if available, or to confirm skeleton creation for new apps.
+- **No-Override Safety**: `gdf add` explicitly warns and preserves existing app configurations instead of overriding them.
+- **Meta-Profiles**: Support for grouping tools via meta-apps (e.g., `backend-dev`).
+- **Recursive Dependencies**: `gdf apply` now recursively installs dependencies for apps in profiles.
+- **Self-Update**: Implemented `gdf update` command and periodic auto-update checks.
+- **Install Script**: Added `scripts/install.sh` for easy installation.
+
+### Changed
+
+### Fixed
+
 ## [0.6.0] - 2026-02-14
 
 

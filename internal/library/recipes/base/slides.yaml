@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: slides
+description: Terminal based presentation tool
+package:
+  brew: slides
+  apt:
+    name: slides
+  dnf: slides
+shell:
+  aliases:
+    sl: slides
+

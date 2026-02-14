@@ -1,0 +1,8 @@
+kind: Recipe/v1
+name: jq
+description: Command-line JSON processor
+package:
+  brew: jq
+  apt:
+    name: jq
+  dnf: jq

@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: httpie
+description: User-friendly cURL-like HTTP client for the API era
+package:
+  brew: httpie
+  apt:
+    name: httpie
+  dnf: httpie
+dotfiles:
+  - source: httpie/config.json
+    target: .config/httpie/config.json
+

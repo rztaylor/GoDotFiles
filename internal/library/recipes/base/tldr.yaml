@@ -1,0 +1,8 @@
+kind: Recipe/v1
+name: tldr
+description: Simplified and community-driven man pages
+package:
+  brew: tldr
+  apt:
+    name: tldr
+  dnf: tldr

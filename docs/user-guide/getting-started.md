@@ -4,21 +4,16 @@ This guide walks you through setting up GDF on a new machine.
 
 ## Installation
 
-### From Source
+The easiest way to install GDF on Linux or macOS is using the official install script:
 
 ```bash
-go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest
+curl -sfL https://raw.githubusercontent.com/rztaylor/GoDotFiles/main/scripts/install.sh | sh
 ```
 
-### From Binary (coming soon)
+### Alternative Methods
 
-```bash
-# macOS
-brew install gdf
-
-# Linux
-curl -sSL https://gdf.dev/install.sh | bash
-```
+- **Manual**: Download the latest release from the [Releases page](https://github.com/rztaylor/GoDotFiles/releases).
+- **From Source**: `go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest` (requires Go 1.21+)
 
 ## Initial Setup
 

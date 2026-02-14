@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: tmux
+description: Terminal multiplexer
+package:
+  brew: tmux
+  apt:
+    name: tmux
+  dnf: tmux
+dotfiles:
+  - source: tmux.conf
+    target: .tmux.conf
+

@@ -118,7 +118,7 @@ Refer to `docs/architecture/versioning.md` for details.
 Recipes in `internal/library/` should:
 
 - Include package definitions for brew, apt, dnf minimum
-- Include `kind: App/v1` in the YAML definition
+- Include `kind: Recipe/v1` in the YAML definition
 - Suggest common aliases (keep it reasonable, not exhaustive)
 - Include shell completions if available
 - Be tested on macOS and Ubuntu

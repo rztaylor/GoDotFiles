@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: ncdu
+description: NCurses Disk Usage
+package:
+  brew: ncdu
+  apt:
+    name: ncdu
+  dnf: ncdu
+shell:
+  aliases:
+    du: ncdu
+

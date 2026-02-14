@@ -11,11 +11,30 @@ A cross-platform dotfile manager that unifies **packages, configuration files, a
 - 🔄 **Git Backend** - Sync dotfiles across all your machines
 - ⚡ **80/20 CLI** - Simple commands for common tasks, YAML for advanced
 
+## Installation
+
+The easiest way to install GDF is using the official install script:
+
+```bash
+curl -sfL https://raw.githubusercontent.com/rztaylor/GoDotFiles/main/scripts/install.sh | sh
+```
+
+### Alternative Methods
+
+- **Manual**: Download binaries from the [Releases page](https://github.com/rztaylor/GoDotFiles/releases).
+- **From Source**: `go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest`
+
+## Auto-Update
+
+GDF automatically checks for updates every 24 hours.
+- **Update now**: `gdf update`
+- **Disable checks**: `gdf update --never`
+
 ## Quick Start
 
 ```bash
-# Install
-go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest
+# 1. Install GDF
+curl -sfL https://raw.githubusercontent.com/rztaylor/GoDotFiles/main/scripts/install.sh | sh
 
 # Initialize with existing dotfiles repo
 gdf init git@github.com:username/dotfiles.git

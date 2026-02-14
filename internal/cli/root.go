@@ -12,8 +12,11 @@ package cli
 import (
 	"fmt"
 
+	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/git"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
+	"github.com/rztaylor/GoDotFiles/internal/state"
+	"github.com/rztaylor/GoDotFiles/internal/updater"
 	"github.com/spf13/cobra"
 )
 
@@ -37,15 +40,48 @@ supporting composable profiles for different use cases (work, home, SRE, etc).`,
 		if !git.IsRepository(gdfDir) {
 			return fmt.Errorf("GDF repository not initialized at %s. Please run 'gdf init' first.", gdfDir)
 		}
+
+		// Auto-update check
+		// Skip if command is 'update' to avoid double checks or interfering with manual update
+		if cmd.Name() != "update" {
+			_ = runAutoUpdateCheck()
+		}
+
 		return nil
 	},
+}
+
+func runAutoUpdateCheck() error {
+	cfgPath := platform.ConfigFile()
+
+	cfg, err := config.LoadConfig(cfgPath)
+	if err != nil {
+		return err
+	}
+
+	st, err := state.Load(platform.StateFile())
+	if err != nil {
+		return err
+	}
+
+	// Check for update (force=false)
+	info, err := updater.CheckForUpdate(cfg, st, false)
+	if err != nil {
+		return err
+	}
+
+	if info != nil {
+		return updater.PromptUpdate(info, st)
+	}
+
+	return nil
 }
 
 func shouldSkipInitCheck(cmd *cobra.Command) bool {
 	// Check if the command itself or any of its parents is 'init', 'version', or 'help'
 	for c := cmd; c != nil; c = c.Parent() {
 		name := c.Name()
-		if name == "init" || name == "version" || name == "help" {
+		if name == "init" || name == "version" || name == "help" || name == "update" {
 			return true
 		}
 	}

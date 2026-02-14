@@ -1,0 +1,8 @@
+kind: Recipe/v1
+name: curl
+description: Transfer data from URLs
+package:
+  brew: curl
+  apt:
+    name: curl
+  dnf: curl

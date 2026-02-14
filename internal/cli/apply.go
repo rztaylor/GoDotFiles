@@ -2,11 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/engine"
+	"github.com/rztaylor/GoDotFiles/internal/library"
 	"github.com/rztaylor/GoDotFiles/internal/packages"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/rztaylor/GoDotFiles/internal/shell"
@@ -103,17 +105,54 @@ func runApply(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Phase 3: Load all app bundles
+	// Phase 3: Load all app bundles (recursively)
 	appsDir := filepath.Join(gdfDir, "apps")
 	allBundles := make(map[string]*apps.Bundle)
+
+	// Queue for recursive loading
+	var queue []string
 	for appName := range appNames {
-		appPath := filepath.Join(appsDir, appName+".yaml")
-		bundle, err := apps.Load(appPath)
-		if err != nil {
-			fmt.Printf("⚠️  Warning: skipping app '%s': %v\n", appName, err)
+		queue = append(queue, appName)
+	}
+
+	libMgr := library.New() // Initialize library manager
+
+	for len(queue) > 0 {
+		name := queue[0]
+		queue = queue[1:]
+
+		if _, exists := allBundles[name]; exists {
 			continue
 		}
-		allBundles[appName] = bundle
+
+		// Try loading from local apps directory first
+		appPath := filepath.Join(appsDir, name+".yaml")
+		bundle, err := apps.Load(appPath)
+		if err != nil {
+			// If not found locally, try the library
+			if os.IsNotExist(err) {
+				fmt.Printf("   ℹ️  App '%s' not found locally, checking library...\n", name)
+				recipe, libErr := libMgr.Get(name)
+				if libErr == nil {
+					// Found in library, instantiate in-memory
+					bundle = recipe.ToBundle()
+					fmt.Printf("   ✨ Resolved '%s' from library (in-memory)\n", name)
+				} else {
+					fmt.Printf("⚠️  Warning: skipping app '%s': %v\n", name, err)
+					continue
+				}
+			} else {
+				fmt.Printf("⚠️  Warning: error loading app '%s': %v\n", name, err)
+				continue
+			}
+		}
+
+		allBundles[name] = bundle
+
+		// Add dependencies to queue
+		if len(bundle.Dependencies) > 0 {
+			queue = append(queue, bundle.Dependencies...)
+		}
 	}
 
 	// Phase 4: Resolve app dependencies

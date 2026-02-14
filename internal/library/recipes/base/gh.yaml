@@ -1,0 +1,18 @@
+kind: Recipe/v1
+name: gh
+description: GitHub CLI
+package:
+  brew: gh
+  apt:
+    name: gh
+  dnf: gh
+dotfiles:
+  - source: gh/config.yml
+    target: .config/gh/config.yml
+shell:
+  aliases:
+    pr: gh pr create
+    prl: gh pr list
+    prc: gh pr checkout
+    rv: gh repo view --web
+

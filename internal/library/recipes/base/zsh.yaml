@@ -1,0 +1,8 @@
+kind: Recipe/v1
+name: zsh
+description: The Z shell
+package:
+  brew: zsh
+  apt:
+    name: zsh
+  dnf: zsh

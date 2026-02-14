@@ -1,0 +1,18 @@
+kind: Recipe/v1
+name: node
+description: JavaScript runtime built on Chrome's V8 JavaScript engine
+package:
+  brew: node
+  apt:
+    name: nodejs
+  dnf: nodejs
+dotfiles:
+  - source: npmrc
+    target: .npmrc
+shell:
+  aliases:
+    n: npm
+    ni: npm install
+    ns: npm start
+    nt: npm test
+

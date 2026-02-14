@@ -1,0 +1,15 @@
+kind: Recipe/v1
+name: just
+description: Handy runner for project-specific commands
+package:
+  brew: just
+  apt:
+    name: just
+  dnf: just
+dotfiles:
+  - source: justfile
+    target: .justfile
+shell:
+  aliases:
+    j: just
+

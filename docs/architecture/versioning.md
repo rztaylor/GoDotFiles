@@ -9,7 +9,7 @@ We will use a **combined `kind` field** to denote both the resource type and its
 ### Format
 The `kind` field must follow the format: `<Type>/<Version>`
 
--   **Type**: The resource type (e.g., `App`, `Profile`, `Config`).
+-   **Type**: The resource type (e.g., `App`, `Profile`, `Config`, `Recipe`).
 -   **Version**: The schema version, strictly following `v` + number (e.g., `v1`, `v2`).
 
 **Example:**

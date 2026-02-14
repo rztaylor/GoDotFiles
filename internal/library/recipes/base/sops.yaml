@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: sops
+description: Editor of encrypted files
+package:
+  brew: sops
+  apt:
+    name: sops
+  dnf: sops
+dotfiles:
+  - source: sops.yaml
+    target: .sops.yaml
+

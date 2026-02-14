@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: k9s
+description: Kubernetes CLI To Manage Your Clusters In Style
+package:
+  brew: k9s
+  apt:
+    name: k9s
+  dnf: k9s
+dotfiles:
+  - source: k9s/config.yml
+    target: .config/k9s/config.yml
+

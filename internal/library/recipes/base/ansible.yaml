@@ -1,0 +1,16 @@
+kind: Recipe/v1
+name: ansible
+description: Automation tool for IT tasks such as configuration management, application deployment, intraservice orchestration, and provisioning
+package:
+  brew: ansible
+  apt:
+    name: ansible
+  dnf: ansible
+dotfiles:
+  - source: ansible.cfg
+    target: .ansible.cfg
+shell:
+  aliases:
+    ans: ansible
+    ap: ansible-playbook
+

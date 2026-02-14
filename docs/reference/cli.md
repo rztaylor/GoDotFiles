@@ -62,6 +62,22 @@ List apps in a profile.
 | ------------------------- | ---------------------------------------------- |
 | `-p, --profile <profile>` | Profile to list apps from (default: `default`) |
  
+#### `gdf library`
+
+Manage and explore the built-in app library.
+
+##### `gdf library list`
+
+List all available recipes in the embedded library.
+
+##### `gdf library describe <recipe>`
+
+Show the YAML definition and details of a specific recipe.
+
+```bash
+gdf library describe git
+```
+
 #### `gdf move <app-pattern> [flags]`
  
 Move apps between profiles. At least one of `--from` or `--to` must be specified. If one is omitted, it defaults to `default`.
@@ -369,3 +385,20 @@ Check system health and report issues.
 #### `gdf shell reload`
 
 Reload shell integration.
+
+---
+
+### Updates
+
+#### `gdf update [flags]`
+
+Check for updates and self-update GDF.
+
+| Flag      | Description                                |
+| --------- | ------------------------------------------ |
+| `--never` | Disable auto-update checks permanently    |
+
+```bash
+gdf update          # Check and update to latest
+gdf update --never  # Disable auto-checks
+```

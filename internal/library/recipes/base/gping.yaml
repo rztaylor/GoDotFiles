@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: gping
+description: Ping, but with a graph
+package:
+  brew: gping
+  apt:
+    name: gping
+  dnf: gping
+shell:
+  aliases:
+    ping: gping
+

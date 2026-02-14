@@ -1,0 +1,19 @@
+kind: Recipe/v1
+name: rust
+description: Safe, concurrent, practical language
+package:
+  brew: rustup
+  apt:
+    name: rustc
+  dnf: rustc
+dotfiles:
+  - source: cargo/config.toml
+    target: .cargo/config.toml
+shell:
+  aliases:
+    c: cargo
+    cb: cargo build
+    cr: cargo run
+    ct: cargo test
+    cc: cargo check
+

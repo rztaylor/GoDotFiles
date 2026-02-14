@@ -1,0 +1,8 @@
+name: frontend-dev
+description: "Frontend Development Suite (Node.js, GitHub CLI)"
+kind: Recipe/v1
+
+dependencies:
+  - node
+  - gh
+  # - npm  # npm is usually part of node, but if we had a separate recipe we'd list it.

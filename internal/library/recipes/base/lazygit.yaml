@@ -1,0 +1,15 @@
+kind: Recipe/v1
+name: lazygit
+description: Simple terminal UI for git commands
+package:
+  brew: lazygit
+  apt:
+    name: lazygit
+  dnf: lazygit
+dotfiles:
+  - source: lazygit/config.yml
+    target: .config/lazygit/config.yml
+shell:
+  aliases:
+    lg: lazygit
+

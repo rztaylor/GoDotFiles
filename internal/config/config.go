@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -28,6 +29,18 @@ type Config struct {
 
 	// Security contains security settings.
 	Security *SecurityConfig `yaml:"security,omitempty"`
+
+	// Updates contains auto-update settings.
+	Updates *UpdatesConfig `yaml:"updates,omitempty"`
+}
+
+// UpdatesConfig holds auto-update settings.
+type UpdatesConfig struct {
+	// Disabled disables auto-update checks.
+	Disabled bool `yaml:"disabled,omitempty"`
+
+	// CheckInterval is the interval between checks (default: 24h).
+	CheckInterval *time.Duration `yaml:"check_interval,omitempty"`
 }
 
 // GitConfig holds git repository settings.
@@ -144,6 +157,12 @@ func (c *Config) Save(path string) error {
 	data, err := yaml.Marshal(c)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
+	}
+
+	// Ensure directory exists
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("creating directory: %w", err)
 	}
 
 	if err := os.WriteFile(path, data, 0644); err != nil {

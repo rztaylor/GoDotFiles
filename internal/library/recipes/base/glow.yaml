@@ -1,0 +1,12 @@
+kind: Recipe/v1
+name: glow
+description: Render markdown on the CLI, with pizzazz!
+package:
+  brew: glow
+  apt:
+    name: glow
+  dnf: glow
+dotfiles:
+  - source: glow.yml
+    target: .config/glow/glow.yml
+

@@ -139,7 +139,17 @@ Now that you understand the concepts, let's get GDF installed and start building
 
 ## Installing GDF
 
-### From Source (requires Go 1.21+)
+### Via Install Script (Recommended)
+
+The easiest way to install GDF is using the official script:
+
+```bash
+curl -sfL https://raw.githubusercontent.com/rztaylor/GoDotFiles/main/scripts/install.sh | sh
+```
+
+### From Source
+
+Requires Go 1.21+ installed on your machine.
 
 ```bash
 go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest
@@ -586,6 +596,42 @@ Apps (6):
 
 ---
 
+## Meta-Profiles: Grouping Apps
+
+As your setup grows, you might find yourself adding the same groups of apps to multiple profiles. For example, `node` and `npm` almost always go together. `kubectl`, `helm`, and `docker` are often a set.
+
+GDF allows you to create **Meta-Apps**—special recipes that exist solely to group other apps together.
+
+### Example: Backend Developer Suite
+
+Imagine you want a single item that installs Go, Docker, Kubectl, and Terraform. You can create a "Meta-App" recipe called `backend-dev`:
+
+1.  Create `~/.gdf/apps/backend-dev.yaml`:
+
+    ```yaml
+    name: backend-dev
+    description: "Backend Development Suite"
+    kind: App/v1  # Uses App schema but acts as a group
+
+    dependencies:
+      - go
+      - docker
+      - kubectl
+      - terraform
+    ```
+
+2.  Add it to your profile:
+
+    ```bash
+    gdf add backend-dev --to programming
+    ```
+
+Now, when you run `gdf apply programming`, GDF sees `backend-dev`, checks its dependencies, and automatically ensures `go`, `docker`, `kubectl`, and `terraform` are also applied—even if you didn't list them explicitly in the profile.
+
+This keeps your profiles clean and composable. You can have a `frontend-dev` meta-app (Node, NPM, GitHub CLI) and a `backend-dev` meta-app, and just mix and match them.
+
+---
+
 ## Applying Profiles
 
 Now that your profiles are defined, let's apply them to your current machine.
@@ -709,7 +755,7 @@ This is where GDF shines. You've got a new work server (or a fresh laptop) and y
 ### Step 1: Install GDF
 
 ```bash
-go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest
+curl -sfL https://raw.githubusercontent.com/rztaylor/GoDotFiles/main/scripts/install.sh | sh
 ```
 
 ### Step 2: Clone your dotfiles

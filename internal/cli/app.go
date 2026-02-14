@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
+	"github.com/rztaylor/GoDotFiles/internal/library"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/spf13/cobra"
 )
@@ -39,14 +41,19 @@ var listCmd = &cobra.Command{
 	RunE:  runList,
 }
 
-var targetProfile string
+var (
+	targetProfile string
+	fromRecipe    bool
+)
 
 func init() {
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(libraryCmd)
 
 	addCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to add app to")
+	addCmd.Flags().BoolVar(&fromRecipe, "from-recipe", false, "Use library recipe without prompting")
 	removeCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to remove app from")
 	listCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to list apps from")
 }
@@ -58,11 +65,52 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	// 1. Check/Create app definition
 	appPath := filepath.Join(gdfDir, "apps", appName+".yaml")
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
-		fmt.Printf("App '%s' not found, creating new bundle...\n", appName)
-		if err := createAppSkeleton(AppName(appName), appPath); err != nil {
-			return fmt.Errorf("creating app skeleton: %w", err)
+		// Check for recipe
+		mgr := library.New()
+		recipe, err := mgr.Get(appName)
+		useRecipe := false
+
+		if err == nil {
+			if fromRecipe {
+				useRecipe = true
+			} else {
+				fmt.Printf("Found recipe for '%s' in library.\n", appName)
+				fmt.Print("Use this recipe? [Y/n]: ")
+				reader := bufio.NewReader(os.Stdin)
+				response, _ := reader.ReadString('\n')
+				response = strings.TrimSpace(strings.ToLower(response))
+				if response == "" || response == "y" || response == "yes" {
+					useRecipe = true
+				}
+			}
+		}
+
+		if useRecipe {
+			fmt.Printf("Using library recipe for '%s'...\n", appName)
+			bundle := recipe.ToBundle()
+			if err := bundle.Save(appPath); err != nil {
+				return fmt.Errorf("saving app bundle: %w", err)
+			}
+		} else {
+			fmt.Printf("App '%s' not found in library.\n", appName)
+			fmt.Print("Create new app skeleton? [Y/n]: ")
+			reader := bufio.NewReader(os.Stdin)
+			response, _ := reader.ReadString('\n')
+			response = strings.TrimSpace(strings.ToLower(response))
+
+			if response == "" || response == "y" || response == "yes" {
+				fmt.Printf("Creating new bundle for '%s'...\n", appName)
+				if err := createAppSkeleton(AppName(appName), appPath); err != nil {
+					return fmt.Errorf("creating app skeleton: %w", err)
+				}
+			} else {
+				fmt.Println("Aborted.")
+				return nil
+			}
 		}
 	} else {
+		// App exists - we never override it with a recipe
+		fmt.Printf("App '%s' already exists in library (local definition). Using existing configuration.\n", appName)
 		// Validate existing app
 		if _, err := apps.Load(appPath); err != nil {
 			return fmt.Errorf("invalid app definition: %w", err)

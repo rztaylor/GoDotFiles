@@ -15,6 +15,7 @@ Each internal package has a specific responsibility.
 | `internal/platform` | OS detection, path normalization |
 | `internal/git` | Git operations (clone, commit, push, pull) |
 | `internal/state` | Applied profile state tracking (local only) |
+| `internal/library` | Embedded app recipes and manager |
 | `internal/util` | Shared utilities (file ops, string helpers) |
 
 ---

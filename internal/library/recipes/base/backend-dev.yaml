@@ -1,0 +1,13 @@
+name: backend-dev
+description: "Backend Development Suite (Go, Docker, Kubectl, Terraform)"
+kind: Recipe/v1
+
+# This recipe acts as a Meta-Profile by grouping other apps.
+dependencies:
+  - go
+  - docker
+  - kubectl
+  - terraform
+
+# No package or dotfiles needed for the meta-app itself.
+# It relies on dependencies to install everything.

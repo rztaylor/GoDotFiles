@@ -1,0 +1,8 @@
+kind: Recipe/v1
+name: make
+description: GNU build tool
+package:
+  brew: make
+  apt:
+    name: make
+  dnf: make

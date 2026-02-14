@@ -1,0 +1,9 @@
+kind: Recipe/v1
+name: starship
+description: The cross-shell prompt for astronauts
+package:
+  brew: starship
+  dnf: starship
+  custom:
+    script: curl -sS https://starship.rs/install.sh | sh
+    sudo: true

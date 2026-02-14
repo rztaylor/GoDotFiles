@@ -1,0 +1,11 @@
+kind: Recipe/v1
+name: fd
+description: A simple, fast and user-friendly alternative to 'find'
+package:
+  brew: fd
+  apt:
+    name: fd-find
+  dnf: fd-find
+shell:
+  aliases:
+    fd: fdfind

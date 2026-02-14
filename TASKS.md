@@ -5,44 +5,16 @@
 
 ---
 
-### Misc tasks
-
-<!-- None pending -->
-<!-- None pending -->
-
-### Phase 2: User Experience
+### Phase 2: Essential Functionality (Next Priorities)
 
 #### 2.2 Core App Library (Embedded Recipes)
-- [ ] Create library recipe schema
-- [ ] Add `mac-preferences` example (package-less bundle)
-- [ ] Add 10 core recipes (git, zsh, vim, tmux, etc.)
-- [ ] Add 10 development recipes (go, node, python, etc.)
-- [ ] Add 10 SRE recipes (kubectl, terraform, aws-cli, etc.)
-- [ ] Implement `gdf library list` command
-- [ ] Implement `gdf add <app> --from-library`
-- [ ] Design Recipe Namespace scheme (local vs core vs remote)
-- [ ] Implement Recipe Merging logic (user overrides)
 
-#### 2.3 Interactive Wizards
-- [ ] Implement interactive `gdf setup` wizard
-- [ ] Add interactive mode to `gdf add`
-- [ ] Add interactive mode to `gdf track`
+#### 2.3 Conditional Configuration
+- [ ] Conditional dotfile linking (evaluate 'when' field)
+    - **User Story**: As a GDF user, I want to track OS-specific versions of a dotfile (e.g., `gitconfig.macos`, `gitconfig.linux`) and have them linked to the same local target (e.g., `~/.gitconfig.os`) depending on the current platform.
+- [ ] Template rendering with documented variables
 
-#### 2.4 Status & Doctor
-- [ ] Implement rich `gdf status` output
-- [ ] Implement `gdf doctor` health check
-- [ ] Implement `gdf fix` auto-repair
-- [ ] Implement `gdf validate` for YAML checking
-
-#### 2.5 Shell Completions
-- [ ] Add --help to provide inline help on available commands, command usage, options, flags etc. 
-
-#### 2.6 Rollback & Cleanup
-- [ ] Implement operation logging for all file/package actions
-- [ ] Implement `gdf rollback` command (undo last operation)
-- [ ] Implement `Unlink` in engine for clean removal of symlinks
-
-#### 2.7 App Lifecycle Management
+#### 2.4 App Lifecycle & Cleanup
 - [ ] Implement `Uninstall(pkg)` in `packages.Manager` interface
 - [ ] Implement `gdf remove --uninstall` to prompt for package removal
 - [ ] Implement "Orphaned App" detection (app YAMLs not in any profile)
@@ -50,27 +22,50 @@
 - [ ] Add auto-cleanup prompt when removing the last reference to an app
 - [ ] Profile Deletion Strategy: Add `--purge` to `gdf profile delete` to also remove apps only found in that profile
 - [ ] Add interactive choice when deleting a profile: (m)igrate to default, (p)urge unique apps, or (l)eave as dangling
+- [ ] Implement `Unlink` in engine for clean removal of symlinks
+
+#### 2.5 Security & Safety
+- [ ] Security awareness
+    - [ ] Scan configuration for potential malicious scripts (e.g., `curl | sh`)
+    - [ ] Detect pre/post hooks that execute shell commands
+    - [ ] Warn user and request confirmation for high-risk configurations
+    - [ ] Display content of high-risk scripts/hooks for review
+- [ ] Implement operation logging for all file/package actions
+- [ ] Implement `gdf rollback` command (undo last operation)
 
 ---
 
-### Phase 3: Advanced Features
+### Phase 3: Enhanced UX & Advanced Features
 
-- [ ] Check for new versions (from github) and offer to update.
-- [ ] Remote Recipe Ecosystem (Git-based Registry & Trust Model)
+#### 3.1 Status, Doctor & Validation
+- [ ] Implement rich `gdf status` output
+- [ ] Implement `gdf doctor` health check
+- [ ] Implement `gdf fix` auto-repair
+- [ ] Implement `gdf validate` for YAML checking
+
+#### 3.2 Shell Experience
+- [ ] Implement gdf shell completion for bash and zsh
+- [ ] Event-based shell auto-reload (using shell hooks to auto-source on prompt)
+
+#### 3.3 Interactive Wizards
+- [ ] Implement interactive `gdf setup` wizard
+- [ ] Add interactive mode to `gdf add`
+- [ ] Add interactive mode to `gdf track`
+- [ ] Conflict resolution UI (interactive prompts)
+
+#### 3.4 Advanced Customization
 - [ ] Companion apps & plugin support
-- [ ] Template rendering with documented variables
-- [ ] Conditional dotfile linking (evaluate 'when' field)
-    - **User Story**: As a GDF user, I want to track OS-specific versions of a dotfile (e.g., `gitconfig.macos`, `gitconfig.linux`) and have them linked to the same local target (e.g., `~/.gitconfig.os`) depending on the current platform.
 - [ ] Function management (`gdf fn` commands)
 - [ ] Pre/post hooks with error handling options
 - [ ] Recipe import/export (`gdf recipe`)
-- [ ] Event-based shell auto-reload (using shell hooks to auto-source on prompt)
+- [ ] First-class Support for Profile Recipes (allow `kind: Profile/v1` in library)
+- [ ] Remote Recipe Ecosystem (Git-based Registry & Trust Model)
+
 
 ---
 
-### Phase 4: Polish & AI
+### Phase 4: Polish & Future Features
 
-- [ ] Conflict resolution UI (interactive prompts)
 - [ ] Secret management (age encryption)
 - [ ] Fish shell support
 - [ ] Import from chezmoi/stow/yadm

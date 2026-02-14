@@ -118,6 +118,14 @@ package:
 3. Requires explicit `y` confirmation (no default)
 4. Logs all script executions for audit
 
+### Configuration Analysis
+
+Before applying any changes, GDF scans the configuration for potential security risks:
+
+- **Malicious Pattern Detection**: Identifies risky install patterns (e.g., `curl | sh`)
+- **Hook Inspection**: Flags pre/post hooks that execute arbitrary shell commands
+- **Review Prompt**: If risks are detected, the user is warned and offered a chance to review the relevant content before proceeding
+
 ---
 
 ## Package Dependencies

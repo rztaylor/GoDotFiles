@@ -1,0 +1,13 @@
+kind: Recipe/v1
+name: age
+description: Simple, modern and secure encryption tool
+package:
+  brew: age
+  apt:
+    name: age
+  dnf: age
+shell:
+  aliases:
+    encrypt: age -r
+    decrypt: age -d
+

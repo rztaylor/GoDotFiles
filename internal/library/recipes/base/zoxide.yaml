@@ -1,0 +1,9 @@
+kind: Recipe/v1
+name: zoxide
+description: A smarter cd command
+package:
+  brew: zoxide
+  dnf: zoxide
+  custom:
+    script: curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+    sudo: true

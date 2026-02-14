@@ -1,0 +1,17 @@
+kind: Recipe/v1
+name: neovim
+description: Vim-fork focused on extensibility and usability
+package:
+  brew: neovim
+  apt:
+    name: neovim
+  dnf: neovim
+dotfiles:
+  - source: nvim/init.lua
+    target: .config/nvim/init.lua
+shell:
+  aliases:
+    v: nvim
+    vi: nvim
+    vim: nvim
+

@@ -64,10 +64,10 @@ CLI (cobra) → App Engine → Platform Layer → Git Storage
 ## Implementation Phases
 
 ### Phase 0: Project Setup ✅
-- [x] Go module structure
-- [x] Documentation templates
-- [x] GEMINI.md AI guidelines
-- [x] Gemini workflows
+- Go module structure
+- Documentation templates
+- GEMINI.md AI guidelines
+- Gemini workflows
 
 ### Phase 1: Core (MVP) - Current
 See [`TASKS.md`](TASKS.md) for detailed task breakdown.

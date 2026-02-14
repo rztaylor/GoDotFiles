@@ -8,7 +8,15 @@ description: How to cut a new release of GDF
     -   Update the comparison links at the bottom if applicable
 
 2.  **Commit Changes**:
-    -   `git commit -am "chore: prepare release v0.6.0"`
+    -   Extract release notes for the commit message:
+        ```bash
+        go run scripts/extract_release_notes.go > release_notes.txt
+        ```
+    -   Commit with the release notes:
+        ```bash
+        git commit -a -F release_notes.txt
+        rm release_notes.txt
+        ```
 
 3.  **Run Release**:
     -   Run the release command with the new version tag:

@@ -1,0 +1,21 @@
+kind: Recipe/v1
+name: kubectl
+description: Kubernetes command-line tool
+package:
+  brew: kubernetes-cli
+  apt:
+    name: kubectl
+  dnf: kubectl
+dotfiles:
+  - source: kube/config
+    target: .kube/config
+shell:
+  aliases:
+    k: kubectl
+    kg: kubectl get
+    kgp: kubectl get pods
+    kd: kubectl describe
+    kdp: kubectl describe pod
+    kl: kubectl logs
+    kaf: kubectl apply -f
+

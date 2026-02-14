@@ -16,6 +16,21 @@ type State struct {
 
 	// LastApplied is the timestamp of the last apply operation.
 	LastApplied time.Time `yaml:"last_applied"`
+
+	// UpdateCheck tracks the last update check.
+	UpdateCheck UpdateCheck `yaml:"update_check"`
+
+	// Path is the file path where state is stored (not serialized).
+	Path string `yaml:"-"`
+}
+
+// UpdateCheck tracks the state of auto-update checks.
+type UpdateCheck struct {
+	// LastChecked is when the last check was performed.
+	LastChecked time.Time `yaml:"last_checked"`
+
+	// SnoozeUntil is the time until which checks are snoozed.
+	SnoozeUntil time.Time `yaml:"snooze_until"`
 }
 
 // AppliedProfile represents a single profile that has been applied.
@@ -39,6 +54,7 @@ func Load(path string) (*State, error) {
 			// Return empty state if file doesn't exist
 			return &State{
 				AppliedProfiles: []AppliedProfile{},
+				Path:            path,
 			}, nil
 		}
 		return nil, fmt.Errorf("reading state file: %w", err)
@@ -54,6 +70,7 @@ func Load(path string) (*State, error) {
 		st.AppliedProfiles = []AppliedProfile{}
 	}
 
+	st.Path = path
 	return &st, nil
 }
 

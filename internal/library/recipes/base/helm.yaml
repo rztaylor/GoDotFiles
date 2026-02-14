@@ -1,0 +1,15 @@
+kind: Recipe/v1
+name: helm
+description: The Kubernetes Package Manager
+package:
+  brew: helm
+  apt:
+    name: helm
+  dnf: helm
+shell:
+  aliases:
+    h: helm
+    hi: helm install
+    hu: helm upgrade
+    hl: helm list
+

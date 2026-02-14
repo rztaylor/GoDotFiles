@@ -1,0 +1,18 @@
+kind: Recipe/v1
+name: terraform
+description: Tool for building, changing, and versioning infrastructure safely and efficiently
+package:
+  brew: terraform
+  apt:
+    name: terraform
+  dnf: terraform
+dotfiles:
+  - source: terraformrc
+    target: .terraformrc
+shell:
+  aliases:
+    tf: terraform
+    tfi: terraform init
+    tfp: terraform plan
+    tfa: terraform apply
+
