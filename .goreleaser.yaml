@@ -1,32 +1,20 @@
-# This is an example goreleaser.yaml file to fix.
+# This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
 version: 2
 
 project_name: gdf
 
-before:
-  hooks:
-    - go mod tidy
-
 builds:
-  - main: ./cmd/gdf
-    env:
+  - env:
       - CGO_ENABLED=0
     goos:
       - linux
+      - windows
       - darwin
-    goarch:
-      - amd64
-      - arm64
-    ldflags:
-      - -s -w
-      - -X github.com/rztaylor/GoDotFiles/internal/cli.Version={{.Version}}
-      - -X github.com/rztaylor/GoDotFiles/internal/cli.Commit={{.Commit}}
-      - -X github.com/rztaylor/GoDotFiles/internal/cli.Date={{.Date}}
 
 archives:
-  - formats: ['tar.gz']
-    # this name template makes the OS and Arch compatible with the results of uname.
+  - format: tar.gz
+    # this name template makes the archives use the same name format as the binaries
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -34,22 +22,32 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        format: zip
 
 checksum:
   name_template: 'checksums.txt'
 
 snapshot:
-  version_template: "{{ .Tag }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
   filters:
     exclude:
+      - '^docs:'
       - '^test:'
 
+# We want to use the release notes we generate
 release:
   github:
     owner: rztaylor
     name: GoDotFiles
+  # If set to true, will not auto-publish the release.
   draft: false
+  # If set to true, will mark the release as not ready for production.
   prerelease: auto
+  # You can change the name of the release.
+  name_template: "{{.Tag}}"
