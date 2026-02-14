@@ -5,7 +5,8 @@ version: 2
 project_name: gdf
 
 builds:
-  - env:
+  - main: ./cmd/gdf
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
