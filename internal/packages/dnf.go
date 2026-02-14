@@ -73,6 +73,6 @@ func (d *Dnf) Name() string {
 
 // IsAvailable checks if dnf is available on the system.
 func (d *Dnf) IsAvailable() bool {
-	_, err := exec.LookPath("dnf")
+	_, err := lookPath("dnf")
 	return err == nil
 }

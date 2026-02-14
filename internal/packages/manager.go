@@ -1,6 +1,13 @@
 package packages
 
-import "github.com/rztaylor/GoDotFiles/internal/platform"
+import (
+	"os/exec"
+
+	"github.com/rztaylor/GoDotFiles/internal/platform"
+)
+
+// lookPath allows mocking exec.LookPath in tests
+var lookPath = exec.LookPath
 
 // Manager is the interface for package managers.
 type Manager interface {

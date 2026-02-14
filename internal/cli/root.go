@@ -10,6 +10,10 @@
 package cli
 
 import (
+	"fmt"
+
+	"github.com/rztaylor/GoDotFiles/internal/git"
+	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +25,31 @@ packages, configuration files, and shell aliases into coherent "app bundles."
 
 It works on macOS, Linux, and WSL, using Git as the storage backend and
 supporting composable profiles for different use cases (work, home, SRE, etc).`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip check for commands that don't require initialization
+		if shouldSkipInitCheck(cmd) {
+			return nil
+		}
+
+		gdfDir := platform.ConfigDir()
+		if !git.IsRepository(gdfDir) {
+			return fmt.Errorf("GDF repository not initialized at %s. Please run 'gdf init' first.", gdfDir)
+		}
+		return nil
+	},
+}
+
+func shouldSkipInitCheck(cmd *cobra.Command) bool {
+	// Check if the command itself or any of its parents is 'init', 'version', or 'help'
+	for c := cmd; c != nil; c = c.Parent() {
+		name := c.Name()
+		if name == "init" || name == "version" || name == "help" {
+			return true
+		}
+	}
+	return false
 }
 
 // Execute runs the root command

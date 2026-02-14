@@ -70,6 +70,6 @@ func (b *Brew) Name() string {
 
 // IsAvailable checks if brew is available on the system.
 func (b *Brew) IsAvailable() bool {
-	_, err := exec.LookPath("brew")
+	_, err := lookPath("brew")
 	return err == nil
 }

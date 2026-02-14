@@ -145,6 +145,18 @@ test(apps): add tests for bundle loading
 | `TASKS.md` | Pending/in-progress tasks | When starting or completing tasks |
 | `CHANGELOG.md` | History of changes | When completing features or fixes |
 | `IMPLEMENTATION_PLAN.md` | Design decisions | When architecture changes |
+| `release` | Automated release | When ready to ship |
+
+### Accidental Release Prevention
+
+The `make release` command includes checks to prevent accidental releases (e.g., ensuring `VERSION` is set, git is clean). Never push tags manually unless you know what you are doing.
+
+### Release Workflow
+
+1. **Prepare**: Update `CHANGELOG.md` (unreleased -> version)
+2. **Tag**: `make release VERSION=vX.Y.Z`
+3. **Build**: Watch GitHub Actions
+
 
 ### TASKS.md Rules
 

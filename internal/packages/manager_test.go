@@ -1,6 +1,7 @@
 package packages
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/rztaylor/GoDotFiles/internal/platform"
@@ -41,7 +42,7 @@ func TestForPlatform(t *testing.T) {
 				OS:     "linux",
 				Distro: "fedora",
 			},
-			wantManager: "none", // dnf not available on this system
+			wantManager: "dnf",
 		},
 		{
 			name: "RHEL returns dnf",
@@ -49,7 +50,7 @@ func TestForPlatform(t *testing.T) {
 				OS:     "linux",
 				Distro: "rhel",
 			},
-			wantManager: "none", // dnf not available on this system
+			wantManager: "dnf",
 		},
 		{
 			name: "WSL with Ubuntu returns apt",
@@ -77,8 +78,27 @@ func TestForPlatform(t *testing.T) {
 		},
 	}
 
+	// Mock lookPath to return success for the expected manager
+	origLookPath := lookPath
+	defer func() { lookPath = origLookPath }()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			lookPath = func(file string) (string, error) {
+				// Map check names to expected manager names
+				checkMap := map[string]string{
+					"brew":    "brew",
+					"apt-get": "apt",
+					"dnf":     "dnf",
+				}
+
+				expected, ok := checkMap[file]
+				if ok && expected == tt.wantManager {
+					return "/usr/bin/" + file, nil
+				}
+				return "", exec.ErrNotFound
+			}
+
 			mgr := ForPlatform(tt.platform)
 			if mgr.Name() != tt.wantManager {
 				t.Errorf("ForPlatform() manager = %q, want %q", mgr.Name(), tt.wantManager)

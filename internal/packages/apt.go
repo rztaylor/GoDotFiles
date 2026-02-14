@@ -123,6 +123,6 @@ func (a *Apt) Name() string {
 
 // IsAvailable checks if apt is available on the system.
 func (a *Apt) IsAvailable() bool {
-	_, err := exec.LookPath("apt-get")
+	_, err := lookPath("apt-get")
 	return err == nil
 }

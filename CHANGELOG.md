@@ -4,7 +4,7 @@ All notable changes to GDF will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0] - unreleased
+## Unreleased version
 
 ### Added
 
@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Version Command**: Added `gdf version` to output build information.
 - **License**: Switched to Apache 2.0 License.
 - **Docs**: Cleaned up broken links in documentation.
+- **Safety**: Enforce initialization check for all commands (except `version`, `init`, and `help`) to ensure GDF is run within a valid repository.
+- **Release Automation**: Added `make release` command and GitHub Action configuration to automate releases via GoReleaser.
+- **Documentation**: Added `CONTRIBUTING.md` and `docs/development/release.md` to guide contributors and maintainers.
 
 
 ## [0.5.0] - 2026-02-13

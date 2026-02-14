@@ -47,7 +47,8 @@ gdf push
 
 ## Development
 
-See [GEMINI.md](GEMINI.md) for AI-assisted development guidelines.
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
+- See [GEMINI.md](GEMINI.md) for AI-assisted development guidelines.
 
 ## License
 

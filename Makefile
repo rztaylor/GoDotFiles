@@ -15,7 +15,7 @@ LDFLAGS := -X github.com/rztaylor/GoDotFiles/internal/cli.Version=$(VERSION) \
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME) ./cmd/gdf
 
-install: build
+install: test build
 	mkdir -p $(HOME)/bin
 	cp $(BINARY_NAME) $(HOME)/bin/
 
@@ -33,3 +33,23 @@ clean:
 	go clean
 	rm -f $(BINARY_NAME)
 	rm -f coverage.out
+
+# Release target
+# Usage: make release VERSION=v0.6.0
+release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: VERSION is not set. Usage: make release VERSION=vX.Y.Z"; \
+		exit 1; \
+	fi
+	@if ! echo "$(VERSION)" | grep -qE "^v[0-9]+\.[0-9]+\.[0-9]+"; then \
+		echo "Error: VERSION must be in format vX.Y.Z"; \
+		exit 1; \
+	fi
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "Error: git working directory is not clean. Commit or stash changes first."; \
+		exit 1; \
+	fi
+	@echo "Creating release $(VERSION)..."
+	git tag -a $(VERSION) -m "Release $(VERSION)"
+	git push origin $(VERSION)
+	@echo "Release $(VERSION) tagged and pushed. GitHub Action should trigger shortly."

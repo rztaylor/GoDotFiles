@@ -8,12 +8,9 @@
 ### Misc tasks
 
 <!-- None pending -->
+<!-- None pending -->
 
 ### Phase 2: User Experience
-
-#### 2.1 UI Foundation (Charmboard & Styles)
-- [ ] Evaluate & Integrate Charm libraries (Bubble Tea, Lip Gloss, etc)
-- [ ] Create reusable UI components (spinner, list, input, confirm, etc)
 
 #### 2.2 Core App Library (Embedded Recipes)
 - [ ] Create library recipe schema
