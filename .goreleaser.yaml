@@ -45,5 +45,11 @@ changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
       - '^test:'
+
+release:
+  github:
+    owner: rztaylor
+    name: GoDotFiles
+  draft: false
+  prerelease: auto
