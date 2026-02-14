@@ -23,7 +23,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Generate Release Notes
-        run: go run scripts/extract_release_notes.go > release_notes.md
+        run: go run scripts/extract_release_notes.go > /tmp/release_notes.md
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -31,6 +31,6 @@ jobs:
           # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           version: '~> v2'
-          args: release --clean --release-notes=release_notes.md
+          args: release --clean --release-notes=/tmp/release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
