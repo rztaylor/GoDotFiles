@@ -137,6 +137,7 @@ hooks:
   apply:                  # Run during apply (for package-less bundles)
     - run: string         # Shell commands to run
       when: string        # Optional condition (e.g., "os == 'macos'")
+                          # Executed only when apply is run with --run-apply-hooks
 
 # ─────────────────────────────────────────────────────────────────
 # COMPANIONS & PLUGINS

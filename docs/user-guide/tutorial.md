@@ -168,6 +168,13 @@ By default, `gdf app add` updates desired repo state only; it does not mutate yo
 gdf app add git -p base --apply
 ```
 
+The same guarded immediate activation flow is available when moving or removing apps:
+
+```bash
+gdf app move "dev-*" --from work --to home --apply
+gdf app remove git -p base --apply
+```
+
 If you omit `--profile` on profile-dependent commands, GDF now resolves it as follows:
 - no profiles: returns an error
 - one profile: selects it automatically

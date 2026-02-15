@@ -157,6 +157,7 @@ Resolve git conflicts inside `~/.gdf` before apply.
 
 - `gdf app remove <app> -p <profile>`: remove from desired profile only.
 - `gdf app remove <app> -p <profile> --uninstall`: also unlink managed dotfiles and attempt package uninstall when safe.
+- Add `--apply` to `app remove` or `app move` for the same guarded preview-and-apply flow used by `app add --apply`.
 
 Preview removal first:
 
@@ -205,6 +206,7 @@ Use deterministic flags:
 - `--non-interactive`
 - `--yes` (where supported)
 - `--json` for machine-readable parsing
+- `--run-apply-hooks` (only if you explicitly want `hooks.apply` to execute in CI)
 
 ### 20) `gdf health doctor` reports issues I do not understand.
 

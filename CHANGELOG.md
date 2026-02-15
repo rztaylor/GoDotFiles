@@ -9,10 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - Add `gdf app add --apply` for a safer add-and-apply flow with preview and confirmation.
 - Add a new user FAQ with practical setup, conflict, sync, recovery, and offboarding scenarios.
+- Add `--apply` support to `gdf app move` and `gdf app remove` for guarded immediate activation parity with `gdf app add --apply`.
+- Add `gdf apply --run-apply-hooks` and `--apply-hook-timeout` for explicit opt-in hook execution with deterministic timeout behavior.
 
 ### Changed
 - `gdf apply` with no profile arguments now reuses previously applied profiles when available, then falls back to profile selection.
 - Clarify that `gdf app add` updates configuration only; run `gdf apply` to change the live system.
+- `gdf apply` now acquires an operation lock and writes generated shell/completion artifacts atomically to reduce concurrent-run corruption risk.
 
 ### Fixed
 - Profile-based commands no longer assume `default` when `--profile` is omitted: they now error with no profiles, auto-select with one, and prompt with many.

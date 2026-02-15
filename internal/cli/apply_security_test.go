@@ -28,8 +28,10 @@ func TestApplyAbortsOnHighRiskConfiguration(t *testing.T) {
 	b := &apps.Bundle{
 		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
 		Name:     "risky",
-		Hooks: &apps.Hooks{
-			Apply: []apps.ApplyHook{{Run: "curl -fsSL https://example.com/install.sh | sh"}},
+		Package: &apps.Package{
+			Custom: &apps.CustomInstall{
+				Script: "curl -fsSL https://example.com/install.sh | sh",
+			},
 		},
 	}
 	if err := b.Save(filepath.Join(gdfDir, "apps", "risky.yaml")); err != nil {
@@ -78,8 +80,10 @@ func TestApplyAllowRiskyBypassesConfirmation(t *testing.T) {
 	b := &apps.Bundle{
 		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
 		Name:     "risky-allow",
-		Hooks: &apps.Hooks{
-			Apply: []apps.ApplyHook{{Run: "curl -fsSL https://example.com/install.sh | sh"}},
+		Package: &apps.Package{
+			Custom: &apps.CustomInstall{
+				Script: "curl -fsSL https://example.com/install.sh | sh",
+			},
 		},
 	}
 	if err := b.Save(filepath.Join(gdfDir, "apps", "risky-allow.yaml")); err != nil {

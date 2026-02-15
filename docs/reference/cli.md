@@ -102,6 +102,7 @@ Remove an app bundle from a profile.
 | `--uninstall`             | Unlink managed dotfiles and uninstall package only when no profiles still reference the app |
 | `--dry-run`               | Preview removal actions without writing changes |
 | `--yes`                   | Skip uninstall/unlink confirmation prompt |
+| `--apply`                 | Preview and apply the selected profile after removal (requires confirmation unless `--yes`) |
 
 When `--uninstall` is set, GDF prints a removal plan before applying changes.
 When an app becomes unreferenced by all profiles, GDF prints cleanup guidance for `gdf app prune`.
@@ -157,6 +158,7 @@ Supports wildcard patterns (e.g. `gnome-*`, `*`).
 | ------------------ | ----------------------------------- |
 | `--from <profile>` | Source profile (if omitted: auto-select one profile, or prompt when multiple) |
 | `--to <profile>`   | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
+| `--apply`          | Preview and apply both affected profiles after move (requires confirmation unless `--yes`) |
  
 ```bash
 gdf app move git --from work --to home
@@ -325,6 +327,8 @@ Apply one or more profiles to the system.
 | `--dry-run` | Show what would be done without making changes |
 | `--allow-risky` | Proceed even if high-risk script patterns are detected |
 | `--json` | Output dry-run plan as JSON (requires `--dry-run`) |
+| `--run-apply-hooks` | Execute `hooks.apply` commands (disabled by default) |
+| `--apply-hook-timeout <duration>` | Per-hook timeout when `--run-apply-hooks` is enabled (default: `30s`) |
 
 This command performs the following operations:
 
@@ -332,16 +336,17 @@ This command performs the following operations:
 2. **Resolve app dependencies** - Orders apps using topological sort
 3. **Install packages** - Installs packages via package managers (when available)
 4. **Link dotfiles** - Creates symlinks with conflict resolution
-5. **Record apply hooks** - Logs hook commands declared by package-less bundles
+5. **Apply hooks (optional)** - Executes `hooks.apply` only when `--run-apply-hooks` is set; otherwise records deterministic skip details
 6. **Generate shell integration** - Updates shell scripts for aliases/functions/env/init
 7. **Generate managed completion files** - Writes app completion artifacts to `~/.gdf/generated/completions/{bash,zsh}/`
-8. **Security scan** - Detects high-risk hook/script commands and requests confirmation
+8. **Security scan** - Detects high-risk script patterns and requests confirmation before mutating operations
 9. **Log operations** - Records all operations to `.operations/` for rollback
 10. **Capture history snapshots** - Saves pre-change file snapshots to `.history/` before destructive replacements
 11. **Update state** - Records applied profiles to `~/.gdf/state.yaml` (local only)
 
 All operations are logged to `~/.gdf/.operations/<timestamp>.json`.
 Historical snapshots are stored in `~/.gdf/.history/` and retained with quota-based eviction.
+Non-dry-run apply acquires a run lock at `~/.gdf/.locks/apply.lock` to avoid concurrent apply corruption.
 
 Package manager selection precedence for each app during apply:
 1. `apps/*.yaml -> package.prefer`

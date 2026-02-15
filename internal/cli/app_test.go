@@ -11,6 +11,7 @@ import (
 	"github.com/rztaylor/GoDotFiles/internal/packages"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/rztaylor/GoDotFiles/internal/schema"
+	"github.com/rztaylor/GoDotFiles/internal/state"
 )
 
 func TestAddApp(t *testing.T) {
@@ -751,5 +752,96 @@ func TestRemoveApp_PrintsDanglingCleanupGuidance(t *testing.T) {
 	})
 	if !strings.Contains(out, "no longer referenced by any profile") {
 		t.Fatalf("expected dangling guidance in output, got: %s", out)
+	}
+}
+
+func TestRemoveAppWithApplyUpdatesState(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	targetProfile = "default"
+	if err := runAdd(nil, []string{"git"}); err != nil {
+		t.Fatalf("setup: runAdd() error = %v", err)
+	}
+
+	oldRemoveApply := removeApply
+	oldRemoveUninstall := removeUninstall
+	oldRemoveDryRun := removeDryRun
+	oldRemoveYes := removeYes
+	oldGlobalYes := globalYes
+	defer func() {
+		removeApply = oldRemoveApply
+		removeUninstall = oldRemoveUninstall
+		removeDryRun = oldRemoveDryRun
+		removeYes = oldRemoveYes
+		globalYes = oldGlobalYes
+	}()
+
+	removeApply = true
+	removeUninstall = false
+	removeDryRun = false
+	removeYes = false
+	globalYes = true
+
+	if err := runRemove(nil, []string{"git"}); err != nil {
+		t.Fatalf("runRemove() error = %v", err)
+	}
+
+	st, err := state.LoadFromDir(gdfDir)
+	if err != nil {
+		t.Fatalf("loading state: %v", err)
+	}
+	if len(st.AppliedProfiles) != 1 || st.AppliedProfiles[0].Name != "default" {
+		t.Fatalf("unexpected applied profiles in state: %+v", st.AppliedProfiles)
+	}
+}
+
+func TestRemoveAppWithApplyNonInteractiveRequiresYes(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	targetProfile = "default"
+	if err := runAdd(nil, []string{"git"}); err != nil {
+		t.Fatalf("setup: runAdd() error = %v", err)
+	}
+
+	oldRemoveApply := removeApply
+	oldRemoveUninstall := removeUninstall
+	oldRemoveDryRun := removeDryRun
+	oldRemoveYes := removeYes
+	oldGlobalYes := globalYes
+	oldNonInteractive := globalNonInteractive
+	defer func() {
+		removeApply = oldRemoveApply
+		removeUninstall = oldRemoveUninstall
+		removeDryRun = oldRemoveDryRun
+		removeYes = oldRemoveYes
+		globalYes = oldGlobalYes
+		globalNonInteractive = oldNonInteractive
+	}()
+
+	removeApply = true
+	removeUninstall = false
+	removeDryRun = false
+	removeYes = false
+	globalYes = false
+	globalNonInteractive = true
+
+	err := runRemove(nil, []string{"git"})
+	if err == nil {
+		t.Fatal("expected non-interactive confirmation error")
+	}
+	if ExitCode(err) != exitCodeNonInteractiveStop {
+		t.Fatalf("ExitCode(err) = %d, want %d", ExitCode(err), exitCodeNonInteractiveStop)
 	}
 }

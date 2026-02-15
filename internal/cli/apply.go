@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
@@ -15,6 +18,7 @@ import (
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/rztaylor/GoDotFiles/internal/shell"
 	"github.com/rztaylor/GoDotFiles/internal/state"
+	"github.com/rztaylor/GoDotFiles/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -43,6 +47,8 @@ All operations are logged to ~/.gdf/.operations/ for potential rollback.`,
 var applyDryRun bool
 var applyAllowRisky bool
 var applyJSON bool
+var applyRunHooks bool
+var applyHookTimeout time.Duration
 var applyRiskConfirmationPrompt = defaultRiskConfirmationPrompt
 
 func init() {
@@ -50,6 +56,8 @@ func init() {
 	applyCmd.Flags().BoolVar(&applyDryRun, "dry-run", false, "Show what would be done without making changes")
 	applyCmd.Flags().BoolVar(&applyAllowRisky, "allow-risky", false, "Proceed without confirmation when high-risk scripts are detected")
 	applyCmd.Flags().BoolVar(&applyJSON, "json", false, "Output dry-run plan as JSON")
+	applyCmd.Flags().BoolVar(&applyRunHooks, "run-apply-hooks", false, "Execute hooks.apply commands (disabled by default)")
+	applyCmd.Flags().DurationVar(&applyHookTimeout, "apply-hook-timeout", 30*time.Second, "Per-hook timeout when running hooks.apply")
 }
 
 func runApply(cmd *cobra.Command, args []string) error {
@@ -73,6 +81,20 @@ func runApply(cmd *cobra.Command, args []string) error {
 
 	if applyJSON && !applyDryRun {
 		return fmt.Errorf("--json is currently only supported with --dry-run")
+	}
+	if applyRunHooks && applyHookTimeout <= 0 {
+		return fmt.Errorf("--apply-hook-timeout must be greater than 0")
+	}
+	if !applyDryRun {
+		lock, err := acquireApplyLock(gdfDir)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if releaseErr := lock.Release(); releaseErr != nil {
+				fmt.Printf("⚠️  Warning: failed to release apply lock: %v\n", releaseErr)
+			}
+		}()
 	}
 
 	if applyDryRun {
@@ -211,6 +233,9 @@ func runApply(cmd *cobra.Command, args []string) error {
 
 	// Security scan before any mutating operations.
 	findings := engine.DetectHighRiskConfigurations(resolvedApps)
+	if !applyRunHooks {
+		findings = filterRiskFindingsForPolicy(findings)
+	}
 	if len(findings) > 0 {
 		fmt.Println("\n⚠️  High-risk commands detected:")
 		for i, f := range findings {
@@ -370,13 +395,50 @@ func runApply(cmd *cobra.Command, args []string) error {
 			fmt.Printf("   Apply hooks: %d command(s)\n", len(bundle.Hooks.Apply))
 			for _, hook := range bundle.Hooks.Apply {
 				fmt.Printf("      • %s\n", hook.Run)
-				if !applyDryRun {
-					fmt.Println("      ℹ️  Hook execution is not enabled yet; recording only.")
+				if hook.When != "" {
+					match, err := config.EvaluateCondition(hook.When, plat)
+					if err != nil {
+						return fmt.Errorf("evaluating apply hook condition for app %s: %w", bundle.Name, err)
+					}
+					if !match {
+						fmt.Printf("      ⏭️  Skipping hook (condition: %s)\n", hook.When)
+						logger.Log("hook_skip", hook.Run, map[string]string{
+							"type":   "apply",
+							"app":    bundle.Name,
+							"when":   hook.When,
+							"reason": "condition_not_met",
+						})
+						continue
+					}
+				}
+				if applyDryRun {
+					logger.Log("hook_run", hook.Run, map[string]string{
+						"type":    "apply",
+						"app":     bundle.Name,
+						"when":    hook.When,
+						"dry_run": "true",
+					})
+					continue
+				}
+
+				if !applyRunHooks {
+					fmt.Println("      ⏭️  Skipping (hooks.apply execution is disabled; use --run-apply-hooks)")
+					logger.Log("hook_skip", hook.Run, map[string]string{
+						"type":   "apply",
+						"app":    bundle.Name,
+						"when":   hook.When,
+						"reason": "not_opted_in",
+					})
+					continue
+				}
+				if err := executeApplyHook(hook.Run, applyHookTimeout); err != nil {
+					return fmt.Errorf("running apply hook for app %s: %w", bundle.Name, err)
 				}
 				logger.Log("hook_run", hook.Run, map[string]string{
-					"type": "apply",
-					"app":  bundle.Name,
-					"when": hook.When,
+					"type":    "apply",
+					"app":     bundle.Name,
+					"when":    hook.When,
+					"timeout": applyHookTimeout.String(),
 				})
 			}
 		}
@@ -539,7 +601,7 @@ func generateManagedCompletionFiles(bundles []*apps.Bundle, gdfDir string) (int,
 				warnings = append(warnings, fmt.Sprintf("Skipping bash completion for app '%s': %v", bundle.Name, err))
 			} else {
 				path := filepath.Join(bashDir, completionFileName(bundle.Name))
-				if err := os.WriteFile(path, output, 0644); err != nil {
+				if err := util.WriteFileAtomic(path, output, 0644); err != nil {
 					return 0, nil, fmt.Errorf("writing bash completion for app %s: %w", bundle.Name, err)
 				}
 				count++
@@ -552,7 +614,7 @@ func generateManagedCompletionFiles(bundles []*apps.Bundle, gdfDir string) (int,
 				warnings = append(warnings, fmt.Sprintf("Skipping zsh completion for app '%s': %v", bundle.Name, err))
 			} else {
 				path := filepath.Join(zshDir, completionFileName(bundle.Name))
-				if err := os.WriteFile(path, output, 0644); err != nil {
+				if err := util.WriteFileAtomic(path, output, 0644); err != nil {
 					return 0, nil, fmt.Errorf("writing zsh completion for app %s: %w", bundle.Name, err)
 				}
 				count++
@@ -595,4 +657,76 @@ func completionFileName(appName string) string {
 		name = "app"
 	}
 	return name + ".sh"
+}
+
+func filterRiskFindingsForPolicy(findings []engine.RiskFinding) []engine.RiskFinding {
+	filtered := make([]engine.RiskFinding, 0, len(findings))
+	for _, finding := range findings {
+		if finding.Location == "hooks.apply.run" {
+			continue
+		}
+		filtered = append(filtered, finding)
+	}
+	return filtered
+}
+
+func executeApplyHook(command string, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		return nil
+	}
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("hook timed out after %s", timeout)
+	}
+
+	trimmed := strings.TrimSpace(string(output))
+	if trimmed != "" {
+		return fmt.Errorf("hook command failed: %w: %s", err, trimmed)
+	}
+	return fmt.Errorf("hook command failed: %w", err)
+}
+
+type applyLock struct {
+	path string
+}
+
+func acquireApplyLock(gdfDir string) (*applyLock, error) {
+	lockDir := filepath.Join(gdfDir, ".locks")
+	if err := os.MkdirAll(lockDir, 0755); err != nil {
+		return nil, fmt.Errorf("creating apply lock directory: %w", err)
+	}
+
+	lockPath := filepath.Join(lockDir, "apply.lock")
+	f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		if os.IsExist(err) {
+			return nil, fmt.Errorf("another apply operation is already in progress (lock file: %s)", lockPath)
+		}
+		return nil, fmt.Errorf("acquiring apply lock: %w", err)
+	}
+	if _, writeErr := fmt.Fprintf(f, "pid=%d\ncreated=%s\n", os.Getpid(), time.Now().Format(time.RFC3339Nano)); writeErr != nil {
+		_ = f.Close()
+		_ = os.Remove(lockPath)
+		return nil, fmt.Errorf("writing apply lock metadata: %w", writeErr)
+	}
+	if closeErr := f.Close(); closeErr != nil {
+		_ = os.Remove(lockPath)
+		return nil, fmt.Errorf("closing apply lock file: %w", closeErr)
+	}
+	return &applyLock{path: lockPath}, nil
+}
+
+func (l *applyLock) Release() error {
+	if l == nil || l.path == "" {
+		return nil
+	}
+	err := os.Remove(l.path)
+	if err == nil || os.IsNotExist(err) {
+		return nil
+	}
+	return err
 }

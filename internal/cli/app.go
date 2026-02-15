@@ -60,9 +60,11 @@ var (
 	fromRecipe      bool
 	addInteractive  bool
 	addApply        bool
+	moveApply       bool
 	removeUninstall bool
 	removeYes       bool
 	removeDryRun    bool
+	removeApply     bool
 	pruneDryRun     bool
 	pruneDelete     bool
 	pruneJSON       bool
@@ -85,6 +87,7 @@ func init() {
 	removeCmd.Flags().BoolVar(&removeUninstall, "uninstall", false, "Also unlink managed dotfiles and uninstall the app package when no profiles reference the app")
 	removeCmd.Flags().BoolVar(&removeDryRun, "dry-run", false, "Preview removal actions without making changes")
 	removeCmd.Flags().BoolVar(&removeYes, "yes", false, "Skip confirmation prompt for uninstall/unlink cleanup")
+	removeCmd.Flags().BoolVar(&removeApply, "apply", false, "Preview and apply the selected profile after removal (requires confirmation unless --yes)")
 	listCmd.Flags().StringVarP(&targetProfile, "profile", "p", "", "Profile to list apps from")
 	pruneCmd.Flags().BoolVar(&pruneDryRun, "dry-run", false, "Preview prune actions without making changes")
 	pruneCmd.Flags().BoolVar(&pruneDelete, "delete", false, "Permanently delete orphaned app definitions instead of archiving them")
@@ -210,14 +213,23 @@ func runAdd(cmd *cobra.Command, args []string) error {
 }
 
 func applyAfterAdd(profileName string) error {
+	return applyProfilesGuarded([]string{profileName})
+}
+
+func applyProfilesGuarded(profileNames []string) error {
+	profileArgs := compactUnique(profileNames)
+	if len(profileArgs) == 0 {
+		return nil
+	}
+
 	if globalNonInteractive && !globalYes {
 		return withExitCode(
-			fmt.Errorf("--apply requires confirmation in non-interactive mode; rerun with --yes or run 'gdf apply %s' separately", profileName),
+			fmt.Errorf("--apply requires confirmation in non-interactive mode; rerun with --yes or run 'gdf apply %s' separately", strings.Join(profileArgs, " ")),
 			exitCodeNonInteractiveStop,
 		)
 	}
 
-	fmt.Printf("\n🔍 Previewing apply for profile '%s'...\n", profileName)
+	fmt.Printf("\n🔍 Previewing apply for profile(s): %s\n", strings.Join(profileArgs, ", "))
 	originalDryRun := applyDryRun
 	originalJSON := applyJSON
 	defer func() {
@@ -227,7 +239,7 @@ func applyAfterAdd(profileName string) error {
 
 	applyDryRun = true
 	applyJSON = false
-	if err := runApply(nil, []string{profileName}); err != nil {
+	if err := runApply(nil, profileArgs); err != nil {
 		return fmt.Errorf("apply preview failed: %w", err)
 	}
 
@@ -242,13 +254,27 @@ func applyAfterAdd(profileName string) error {
 		}
 	}
 
-	fmt.Printf("\n🚀 Applying profile '%s'...\n", profileName)
+	fmt.Printf("\n🚀 Applying profile(s): %s\n", strings.Join(profileArgs, ", "))
 	applyDryRun = false
 	applyJSON = false
-	if err := runApply(nil, []string{profileName}); err != nil {
+	if err := runApply(nil, profileArgs); err != nil {
 		return err
 	}
 	return nil
+}
+
+func compactUnique(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := make(map[string]bool, len(values))
+	for _, value := range values {
+		name := strings.TrimSpace(value)
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	return out
 }
 
 func maybeSuggestRecipes(appName string) error {
@@ -364,6 +390,9 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	printDanglingAppCleanupGuidance(gdfDir, appName)
+	if removeApply {
+		return applyProfilesGuarded([]string{profileName})
+	}
 
 	return nil
 }

@@ -30,6 +30,7 @@ func init() {
 	appCmd.AddCommand(moveCmd)
 	moveCmd.Flags().StringVar(&moveFromProfile, "from", "", "Source profile")
 	moveCmd.Flags().StringVar(&moveToProfile, "to", "", "Target profile")
+	moveCmd.Flags().BoolVar(&moveApply, "apply", false, "Preview and apply affected profiles after moving apps (requires confirmation unless --yes)")
 }
 
 func runMove(cmd *cobra.Command, args []string) error {
@@ -141,6 +142,9 @@ func runMove(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✓ Moved %d apps from '%s' to '%s'\n", len(matchedApps), from, to)
 	for _, app := range matchedApps {
 		fmt.Printf("  - %s\n", app)
+	}
+	if moveApply {
+		return applyProfilesGuarded([]string{from, to})
 	}
 
 	return nil

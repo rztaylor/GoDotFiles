@@ -1,7 +1,9 @@
-// Package util is reserved for shared helper code used across GDF packages.
+// Package util provides reusable cross-package helpers for GDF internals.
 //
-// At the moment, this package only contains package-level documentation and
-// does not define exported utility functions. New helpers should be added here
-// only when they are clearly reusable and do not duplicate existing logic in
-// domain packages.
+// Key helpers:
+//   - WriteFileAtomic: atomically replaces files by writing to a temporary
+//     file in the destination directory and renaming into place.
+//
+// Dependencies:
+//   - Standard library filesystem primitives (`os`, `path/filepath`).
 package util

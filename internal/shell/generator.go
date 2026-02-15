@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
+	"github.com/rztaylor/GoDotFiles/internal/util"
 )
 
 // Generator generates shell integration scripts.
@@ -97,7 +98,7 @@ func (g *Generator) GenerateWithOptions(bundles []*apps.Bundle, shellType ShellT
 	}
 
 	// Write to file
-	if err := os.WriteFile(outputPath, []byte(script.String()), 0644); err != nil {
+	if err := util.WriteFileAtomic(outputPath, []byte(script.String()), 0644); err != nil {
 		return fmt.Errorf("failed to write shell script: %w", err)
 	}
 
@@ -339,7 +340,7 @@ func (g *Generator) ExportAliases(bundles []*apps.Bundle, globalAliases map[stri
 	content := "# Aliases exported by GDF restore\n" + aliases
 
 	// Write to file
-	if err := os.WriteFile(outputPath, []byte(content), 0644); err != nil {
+	if err := util.WriteFileAtomic(outputPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("writing aliases file: %w", err)
 	}
 	return nil
