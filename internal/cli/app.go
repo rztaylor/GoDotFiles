@@ -59,6 +59,7 @@ var (
 	targetProfile   string
 	fromRecipe      bool
 	addInteractive  bool
+	addApply        bool
 	removeUninstall bool
 	removeYes       bool
 	removeDryRun    bool
@@ -79,6 +80,7 @@ func init() {
 	addCmd.Flags().StringVarP(&targetProfile, "profile", "p", "", "Profile to add app to")
 	addCmd.Flags().BoolVar(&fromRecipe, "from-recipe", false, "Use library recipe without prompting")
 	addCmd.Flags().BoolVar(&addInteractive, "interactive", false, "Enable interactive recipe suggestions and dependency prompts")
+	addCmd.Flags().BoolVar(&addApply, "apply", false, "Run a guarded apply for the selected profile after adding")
 	removeCmd.Flags().StringVarP(&targetProfile, "profile", "p", "", "Profile to remove app from")
 	removeCmd.Flags().BoolVar(&removeUninstall, "uninstall", false, "Also unlink managed dotfiles and uninstall the app package when no profiles reference the app")
 	removeCmd.Flags().BoolVar(&removeDryRun, "dry-run", false, "Preview removal actions without making changes")
@@ -198,6 +200,54 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✓ Added '%s' to profile '%s'\n", appName, profileName)
+
+	if !addApply {
+		fmt.Printf("ℹ️  Desired state updated. Live system unchanged. Run: gdf apply %s\n", profileName)
+		return nil
+	}
+
+	return applyAfterAdd(profileName)
+}
+
+func applyAfterAdd(profileName string) error {
+	if globalNonInteractive && !globalYes {
+		return withExitCode(
+			fmt.Errorf("--apply requires confirmation in non-interactive mode; rerun with --yes or run 'gdf apply %s' separately", profileName),
+			exitCodeNonInteractiveStop,
+		)
+	}
+
+	fmt.Printf("\n🔍 Previewing apply for profile '%s'...\n", profileName)
+	originalDryRun := applyDryRun
+	originalJSON := applyJSON
+	defer func() {
+		applyDryRun = originalDryRun
+		applyJSON = originalJSON
+	}()
+
+	applyDryRun = true
+	applyJSON = false
+	if err := runApply(nil, []string{profileName}); err != nil {
+		return fmt.Errorf("apply preview failed: %w", err)
+	}
+
+	if !globalYes {
+		confirmed, err := confirmPrompt("\nApply these changes now? [y/N]: ")
+		if err != nil {
+			return err
+		}
+		if !confirmed {
+			fmt.Println("Apply skipped. Desired state remains updated.")
+			return nil
+		}
+	}
+
+	fmt.Printf("\n🚀 Applying profile '%s'...\n", profileName)
+	applyDryRun = false
+	applyJSON = false
+	if err := runApply(nil, []string{profileName}); err != nil {
+		return err
+	}
 	return nil
 }
 

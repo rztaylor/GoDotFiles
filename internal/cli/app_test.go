@@ -74,6 +74,79 @@ func TestAddApp(t *testing.T) {
 	}
 }
 
+func TestAddAppWithApplyUpdatesState(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	origProfile := targetProfile
+	origFromRecipe := fromRecipe
+	origApply := addApply
+	origYes := globalYes
+	defer func() {
+		targetProfile = origProfile
+		fromRecipe = origFromRecipe
+		addApply = origApply
+		globalYes = origYes
+	}()
+
+	targetProfile = "default"
+	fromRecipe = false
+	addApply = true
+	globalYes = true
+
+	if err := runAdd(nil, []string{"app-with-apply"}); err != nil {
+		t.Fatalf("runAdd() error = %v", err)
+	}
+
+	statePath := filepath.Join(gdfDir, "state.yaml")
+	stateContent, err := os.ReadFile(statePath)
+	if err != nil {
+		t.Fatalf("reading state file: %v", err)
+	}
+	if !containsString(string(stateContent), "name: default") {
+		t.Fatalf("expected state to include applied default profile, got:\n%s", string(stateContent))
+	}
+}
+
+func TestAddAppWithApplyNonInteractiveRequiresYes(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	origProfile := targetProfile
+	origApply := addApply
+	origYes := globalYes
+	origNonInteractive := globalNonInteractive
+	defer func() {
+		targetProfile = origProfile
+		addApply = origApply
+		globalYes = origYes
+		globalNonInteractive = origNonInteractive
+	}()
+
+	targetProfile = "default"
+	addApply = true
+	globalYes = false
+	globalNonInteractive = true
+
+	err := runAdd(nil, []string{"safe-add"})
+	if err == nil {
+		t.Fatal("runAdd() expected non-interactive confirmation error")
+	}
+	if ExitCode(err) != exitCodeNonInteractiveStop {
+		t.Fatalf("ExitCode(err) = %d, want %d", ExitCode(err), exitCodeNonInteractiveStop)
+	}
+}
+
 func TestAddAppCreatesAppsDirectoryWhenMissing(t *testing.T) {
 	tmpDir := t.TempDir()
 	gdfDir := filepath.Join(tmpDir, ".gdf")

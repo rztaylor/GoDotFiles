@@ -18,6 +18,11 @@ For 1.0 prioritization:
 
 ## Priority 2: Post-1.0 Adoption and Reproducibility (1.1+)
 
+### 2.2 Apply Workflow Consistency Follow-ups
+- [ ] Extend guarded immediate activation UX beyond `gdf app add --apply` (evaluate `app move` / `app remove` parity).
+- [ ] Implement policy-aware execution for app `hooks.apply` with explicit opt-in controls, timeouts, and deterministic non-interactive behavior.
+- [ ] Add apply-time operation locking and atomic generated artifact writes to reduce concurrent-run corruption risk.
+
 ### 2.3 Reproducible Environments and Secrets
 - [ ] Implement lock file support for resolved package sources/versions per platform
 - [ ] Add lock refresh and verification workflow integrated with `apply` and CI checks

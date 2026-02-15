@@ -6,15 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- Add `gdf app add --apply` for a safer add-and-apply flow with preview and confirmation.
+- Add a new user FAQ with practical setup, conflict, sync, recovery, and offboarding scenarios.
+
+### Changed
+- `gdf apply` with no profile arguments now reuses previously applied profiles when available, then falls back to profile selection.
+- Clarify that `gdf app add` updates configuration only; run `gdf apply` to change the live system.
+
 ### Fixed
-- Stop assuming a `default` profile for profile-dependent app workflows (`app add/remove/list/install/import/move` and `profile show`) when `--profile` is omitted. GDF now errors when no profiles exist, auto-selects when exactly one exists, and prompts when multiple exist.
-- Create the `apps/` directory on demand during `gdf app add` so adding a recipe or new app succeeds even when the directory is missing.
-- Improve package install selection during `gdf apply` by honoring app and global manager preferences and skipping reinstall when a package is already installed via any configured available manager.
-- Generate fully-expanded `config.yaml` defaults (including package manager, updates, and shell integration sections) during init and config repair so all available options are visible by default.
-- Ensure `gdf init` and cloned-repo setup paths always recreate core directories (`apps`, `profiles`, `dotfiles`, `generated`) and generated init placeholder so health checks do not immediately report missing baseline paths.
-- Remove invalid git recipe completion commands so `gdf apply` no longer emits completion-generation warnings for `git`.
-- Expand base library recipe quality with sensible tracked config files for common tools (including `git` and `zsh`), add managed completions for `just`, and seed missing recipe source files during `gdf app add` so apply workflows do not fail on newly added recipes.
-- Add a comprehensive `oh-my-zsh` library recipe with dependency-aware setup (`zsh`, `git`), tracked custom config entry points, and install mappings plus custom fallback.
+- Profile-based commands no longer assume `default` when `--profile` is omitted: they now error with no profiles, auto-select with one, and prompt with many.
+- `gdf app add` is more reliable when starting from a minimal or partially initialized repository.
+- `gdf apply` package installation is smarter about manager preferences and avoids reinstalling tools already present through another supported manager.
+- Fresh and repaired config now expose all major settings by default, making options easier to discover and edit.
+- Init and cloned-repo setup now restore expected baseline folders/files more consistently, reducing immediate post-init health issues.
+- `gdf apply` no longer emits spurious completion warnings for `git`.
+- Base recipes now provide better out-of-the-box coverage for common tools (including `git`, `zsh`, `just`, and `oh-my-zsh`) with safer first-time apply behavior.
+- Apps that use only custom install scripts are now treated as valid installable definitions instead of being rejected as unsupported.
 
 ## [1.1.0] - 2026-02-15
 

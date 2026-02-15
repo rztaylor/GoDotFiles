@@ -83,6 +83,17 @@ func TestResolvePackageManagerPlan(t *testing.T) {
 			wantSelected: "brew",
 			wantProbes:   []string{"brew"},
 		},
+		{
+			name: "falls back to custom install when no package manager mapping exists",
+			pkg: &apps.Package{
+				Custom: &apps.CustomInstall{Script: "echo install"},
+			},
+			cfg:          &config.Config{},
+			auto:         "apt",
+			available:    map[string]bool{"brew": true, "apt": true},
+			wantSelected: "custom",
+			wantProbes:   []string{"custom"},
+		},
 	}
 
 	for _, tt := range tests {

@@ -73,7 +73,18 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		bundle.Package = &apps.Package{}
 	}
 
+	packageUpdated := false
+	if installScript != "" {
+		bundle.Package.Custom = &apps.CustomInstall{Script: installScript}
+		packageUpdated = true
+	}
+
 	pkgName, defined := bundle.Package.ResolveName(pkgMgr.Name())
+	useCustom := false
+	if !defined && bundle.Package.Custom != nil && bundle.Package.Custom.Script != "" {
+		defined = true
+		useCustom = true
+	}
 
 	// 4. Learning Phase
 	if !defined {
@@ -147,10 +158,22 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			}
 			fmt.Printf("✓ Updated app definition for '%s'\n", appName)
 		}
+	} else if packageUpdated {
+		if err := bundle.Save(appPath); err != nil {
+			return fmt.Errorf("saving app bundle: %w", err)
+		}
+		fmt.Printf("✓ Updated app definition for '%s'\n", appName)
 	}
 
 	// 5. Install Phase
-	if defined && pkgName != "" {
+	if useCustom {
+		fmt.Printf("📦 Installing %s via custom script...\n", appName)
+		custom := packages.NewCustom()
+		if err := custom.Execute(bundle.Package.Custom); err != nil {
+			return fmt.Errorf("executing custom install script: %w", err)
+		}
+		fmt.Println("✅ Installed successfully")
+	} else if defined && pkgName != "" {
 		fmt.Printf("📦 Installing %s via %s...\n", pkgName, pkgMgr.Name())
 		if err := pkgMgr.Install(pkgName); err != nil {
 			return fmt.Errorf("installing package: %w", err)

@@ -105,6 +105,25 @@ func TestApplyPackageInstallBehavior(t *testing.T) {
 			t.Fatalf("expected installed checks for both managers, got apt=%d brew=%d", aptMgr.isInstalledCalls, brewMgr.isInstalledCalls)
 		}
 	})
+
+	t.Run("treats custom install as valid and skips execution during apply", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		marker := filepath.Join(tmpDir, "custom-installed")
+		confirm := false
+		_, _ = setupApplyPackageInstallBundleTest(t, "pkg-app", &apps.Package{
+			Custom: &apps.CustomInstall{
+				Script:  "printf custom > " + marker,
+				Confirm: &confirm,
+			},
+		})
+
+		if err := runApply(nil, []string{"default"}); err != nil {
+			t.Fatalf("runApply() error = %v", err)
+		}
+		if _, err := os.Stat(marker); !os.IsNotExist(err) {
+			t.Fatalf("custom install script should not execute during apply")
+		}
+	})
 }
 
 func setupApplyPackageInstallTest(t *testing.T, appName, pkgName string) (string, string) {

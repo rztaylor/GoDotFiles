@@ -82,11 +82,15 @@ Add an app bundle to a profile.
 | `-p, --profile <profile>` | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
 | `--from-recipe`           | Use built-in recipe                 |
 | `--interactive`           | Show recipe suggestions and dependency prompts |
+| `--apply`                 | Preview and apply the selected profile after adding (requires confirmation unless `--yes`) |
 
 ```bash
 gdf app add kubectl -p sre
 gdf app add backend-dev --from-recipe --interactive
+gdf app add git -p base --apply
 ```
+
+`gdf app add` updates desired configuration only by default. It does not mutate live targets unless `--apply` is set.
 
 #### `gdf app remove <app> [flags]`
 
@@ -163,6 +167,7 @@ gdf app move --from old-work --to work # Move all apps
 #### `gdf app install <app> [flags]`
 
 Install an app directly. if the app is not defined or the installation method is unknown for the current OS, it will prompt to learn the package details.
+If the app already defines `package.custom`, GDF uses that script as a valid install method when no package-manager mapping is available.
 
 If `--profile` is omitted, GDF selects a profile automatically when exactly one exists, or prompts you when multiple profiles exist.
 
@@ -311,7 +316,7 @@ gdf profile rename work work-2024
 
 ### Apply & Status
 
-#### `gdf apply <profiles...>`
+#### `gdf apply [profiles...]`
 
 Apply one or more profiles to the system.
 
@@ -327,7 +332,7 @@ This command performs the following operations:
 2. **Resolve app dependencies** - Orders apps using topological sort
 3. **Install packages** - Installs packages via package managers (when available)
 4. **Link dotfiles** - Creates symlinks with conflict resolution
-5. **Run apply hooks** - Executes hooks for package-less bundles
+5. **Record apply hooks** - Logs hook commands declared by package-less bundles
 6. **Generate shell integration** - Updates shell scripts for aliases/functions/env/init
 7. **Generate managed completion files** - Writes app completion artifacts to `~/.gdf/generated/completions/{bash,zsh}/`
 8. **Security scan** - Detects high-risk hook/script commands and requests confirmation
@@ -344,6 +349,12 @@ Package manager selection precedence for each app during apply:
 3. platform auto-detection
 
 When an app defines multiple package managers, GDF checks installed status across configured and available managers and skips reinstall when already satisfied.
+
+If no profiles are provided, GDF resolves apply targets in this order:
+1. Reuse profiles from local `~/.gdf/state.yaml` if present.
+2. If exactly one profile exists, apply it automatically.
+3. If multiple profiles exist, prompt you to choose one.
+4. In `--non-interactive` mode with multiple profiles and no state, fail with guidance.
 
 ```bash
 # Apply single profile

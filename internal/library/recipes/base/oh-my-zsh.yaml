@@ -5,10 +5,6 @@ dependencies:
   - zsh
   - git
 package:
-  brew: oh-my-zsh
-  apt:
-    name: oh-my-zsh
-  dnf: oh-my-zsh
   custom:
     script: |
       if [ -d "$HOME/.oh-my-zsh" ]; then

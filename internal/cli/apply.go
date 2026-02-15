@@ -19,7 +19,7 @@ import (
 )
 
 var applyCmd = &cobra.Command{
-	Use:   "apply <profiles...>",
+	Use:   "apply [profiles...]",
 	Short: "Apply one or more profiles",
 	Long: `Apply profiles to the system.
 
@@ -28,14 +28,15 @@ This command will:
   2. Resolve app dependencies
   3. Install packages (if package manager available)
   4. Link dotfiles with conflict resolution
-  5. Run apply hooks for package-less bundles
+  5. Record apply hooks for package-less bundles
   6. Generate shell integration scripts (aliases, env, functions, init, completions)
 
 All operations are logged to ~/.gdf/.operations/ for potential rollback.`,
 	Example: `  gdf apply base work
+  gdf apply
   gdf apply --dry-run sre
   gdf apply base`,
-	Args: cobra.MinimumNArgs(1),
+	Args: cobra.ArbitraryArgs,
 	RunE: runApply,
 }
 
@@ -52,9 +53,12 @@ func init() {
 }
 
 func runApply(cmd *cobra.Command, args []string) error {
-	profileNames := args
 	gdfDir := platform.ConfigDir()
 	plat := platform.Detect()
+	profileNames, err := resolveApplyProfileNames(args, gdfDir)
+	if err != nil {
+		return err
+	}
 
 	// Load config for conflict strategy
 	cfg, err := config.LoadConfig(filepath.Join(gdfDir, "config.yaml"))
@@ -250,6 +254,17 @@ func runApply(cmd *cobra.Command, args []string) error {
 			}
 
 			selected := plan.Selected
+			if selected.Name == "custom" {
+				fmt.Println("   Package: custom install script")
+				fmt.Println("      ⏭️  Skipping custom script execution during apply")
+				logger.Log("package_install_skipped", "custom_script", map[string]string{
+					"manager": "custom",
+					"app":     bundle.Name,
+					"reason":  "custom_script_not_executed_in_apply",
+				})
+				goto SkipPackageInstall
+			}
+
 			fmt.Printf("   Package: %s (via %s)\n", selected.PackageName, selected.Name)
 
 			if selected.Name != "none" {
@@ -356,8 +371,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 			for _, hook := range bundle.Hooks.Apply {
 				fmt.Printf("      • %s\n", hook.Run)
 				if !applyDryRun {
-					// TODO: Actually run the hook command
-					// For now, just log it
+					fmt.Println("      ℹ️  Hook execution is not enabled yet; recording only.")
 				}
 				logger.Log("hook_run", hook.Run, map[string]string{
 					"type": "apply",
@@ -445,6 +459,37 @@ func runApply(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func resolveApplyProfileNames(requested []string, gdfDir string) ([]string, error) {
+	if len(requested) > 0 {
+		return requested, nil
+	}
+
+	st, err := state.LoadFromDir(gdfDir)
+	if err != nil {
+		return nil, fmt.Errorf("loading state: %w", err)
+	}
+	if len(st.AppliedProfiles) > 0 {
+		names := make([]string, 0, len(st.AppliedProfiles))
+		for _, profile := range st.AppliedProfiles {
+			if profile.Name == "" {
+				continue
+			}
+			names = append(names, profile.Name)
+		}
+		if len(names) > 0 {
+			fmt.Printf("No profile arguments provided. Reapplying profiles from local state: %s\n", strings.Join(names, ", "))
+			return names, nil
+		}
+	}
+
+	selected, err := resolveProfileSelection(gdfDir, "")
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("No profile arguments provided. Applying selected profile: %s\n", selected)
+	return []string{selected}, nil
 }
 
 func defaultRiskConfirmationPrompt(findings []engine.RiskFinding) (bool, error) {

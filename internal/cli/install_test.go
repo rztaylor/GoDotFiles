@@ -145,6 +145,50 @@ func TestInstall_WithProfileFlag(t *testing.T) {
 	assert.FileExists(t, profilePath)
 }
 
+func TestInstall_UsesCustomScriptWhenNoPackageMapping(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatal(err)
+	}
+
+	marker := filepath.Join(tmpDir, "custom-install-marker")
+	confirm := false
+	bundle := &apps.Bundle{
+		Name: "custom-only",
+		Package: &apps.Package{
+			Custom: &apps.CustomInstall{
+				Script:  "printf installed > " + marker,
+				Confirm: &confirm,
+			},
+		},
+	}
+	if err := bundle.Save(filepath.Join(gdfDir, "apps", "custom-only.yaml")); err != nil {
+		t.Fatalf("saving bundle: %v", err)
+	}
+
+	platform.Override = &platform.Platform{OS: "linux", Distro: "ubuntu", Home: homeDir}
+	defer func() { platform.Override = nil }()
+	packages.Override = nil
+
+	oldProfile := installProfile
+	installProfile = "default"
+	defer func() { installProfile = oldProfile }()
+
+	if err := runInstall(nil, []string{"custom-only"}); err != nil {
+		t.Fatalf("runInstall() error = %v", err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatalf("expected custom install marker file: %v", err)
+	}
+}
+
 // MockPackageManager for testing
 type MockPackageManager struct {
 	mgrName          string

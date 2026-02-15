@@ -162,6 +162,12 @@ gdf app add git -p base
 gdf app track ~/.gitconfig -a git
 ```
 
+By default, `gdf app add` updates desired repo state only; it does not mutate your live system until apply. Use `--apply` for a guarded add-and-apply flow:
+
+```bash
+gdf app add git -p base --apply
+```
+
 If you omit `--profile` on profile-dependent commands, GDF now resolves it as follows:
 - no profiles: returns an error
 - one profile: selects it automatically
@@ -507,6 +513,7 @@ If package metadata is missing for your platform, GDF can prompt to learn instal
 ## Next Steps
 
 - Explore built-in recipes: `gdf app library list` and `gdf app library describe <recipe>`
+- Troubleshoot common setup, sync, recovery, and offboarding issues: [FAQ](FAQ.md)
 - Learn full command behavior: [CLI Reference](../reference/cli.md)
 - Learn all YAML fields and conditions: [YAML Schema Reference](../reference/yaml-schemas.md)
 - Review design rationale: [Architecture Overview](../architecture/overview.md)

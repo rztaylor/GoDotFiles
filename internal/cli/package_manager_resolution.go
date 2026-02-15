@@ -13,6 +13,7 @@ type packageManagerCandidate struct {
 	Name        string
 	Manager     packages.Manager
 	PackageName string
+	Custom      *apps.CustomInstall
 }
 
 type packageManagerPlan struct {
@@ -73,6 +74,14 @@ func resolvePackageManagerPlan(pkg *apps.Package, plat *platform.Platform, cfg *
 				selectedName = name
 			}
 		}
+	}
+
+	if selectedName == "" && pkg.Custom != nil {
+		candidates["custom"] = packageManagerCandidate{
+			Name:   "custom",
+			Custom: pkg.Custom,
+		}
+		selectedName = "custom"
 	}
 
 	if selectedName == "" {

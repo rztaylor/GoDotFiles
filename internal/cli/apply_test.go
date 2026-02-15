@@ -5,9 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
+	"github.com/rztaylor/GoDotFiles/internal/state"
 )
 
 func TestApply(t *testing.T) {
@@ -268,5 +270,102 @@ func TestApplyGeneratesManagedCompletionFiles(t *testing.T) {
 	}
 	if _, err := os.Stat(zshCompPath); !os.IsNotExist(err) {
 		t.Fatalf("expected zsh completion file to be removed, stat err=%v", err)
+	}
+}
+
+func TestResolveApplyProfileNames_NoArgsUsesState(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo: %v", err)
+	}
+
+	st := &state.State{
+		AppliedProfiles: []state.AppliedProfile{
+			{Name: "default", AppliedAt: time.Now()},
+			{Name: "work", AppliedAt: time.Now()},
+		},
+		LastApplied: time.Now(),
+	}
+	if err := st.Save(filepath.Join(gdfDir, "state.yaml")); err != nil {
+		t.Fatalf("save state: %v", err)
+	}
+
+	names, err := resolveApplyProfileNames(nil, gdfDir)
+	if err != nil {
+		t.Fatalf("resolveApplyProfileNames() error = %v", err)
+	}
+	if len(names) != 2 || names[0] != "default" || names[1] != "work" {
+		t.Fatalf("resolveApplyProfileNames() = %v, want [default work]", names)
+	}
+}
+
+func TestResolveApplyProfileNames_NoArgsSingleProfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo: %v", err)
+	}
+
+	// Keep only one profile so no interactive selection is required.
+	if err := os.RemoveAll(filepath.Join(gdfDir, "profiles", "default")); err != nil {
+		t.Fatalf("remove default profile: %v", err)
+	}
+	if err := addAppToProfile(gdfDir, "base", "git"); err != nil {
+		t.Fatalf("addAppToProfile: %v", err)
+	}
+
+	names, err := resolveApplyProfileNames(nil, gdfDir)
+	if err != nil {
+		t.Fatalf("resolveApplyProfileNames() error = %v", err)
+	}
+	if len(names) != 1 || names[0] != "base" {
+		t.Fatalf("resolveApplyProfileNames() = %v, want [base]", names)
+	}
+}
+
+func TestResolveApplyProfileNames_NoArgsMultipleProfilesNonInteractive(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo: %v", err)
+	}
+	if err := addAppToProfile(gdfDir, "work", "git"); err != nil {
+		t.Fatalf("addAppToProfile work: %v", err)
+	}
+
+	origNonInteractive := globalNonInteractive
+	globalNonInteractive = true
+	defer func() {
+		globalNonInteractive = origNonInteractive
+	}()
+
+	_, err := resolveApplyProfileNames(nil, gdfDir)
+	if err == nil {
+		t.Fatal("resolveApplyProfileNames() expected error in non-interactive multi-profile mode")
+	}
+	if ExitCode(err) != exitCodeNonInteractiveStop {
+		t.Fatalf("ExitCode(err) = %d, want %d", ExitCode(err), exitCodeNonInteractiveStop)
 	}
 }

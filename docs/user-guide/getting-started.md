@@ -88,6 +88,12 @@ gdf app add git -p base
 gdf app track ~/.gitconfig -a git
 ```
 
+`gdf app add` updates desired profile/app configuration only. To activate immediately, use:
+
+```bash
+gdf app add git -p base --apply
+```
+
 This moves your managed copy into `~/.gdf/dotfiles/git/.gitconfig` and symlinks `~/.gitconfig` to it.
 
 If you already have many existing configs and aliases, use import:
@@ -179,6 +185,7 @@ gdf app prune
 ## Next Steps
 
 - Full walkthrough with concepts and use-cases: [Tutorial](tutorial.md)
+- Common troubleshooting and recovery scenarios: [FAQ](FAQ.md)
 - All commands and flags: [CLI Reference](../reference/cli.md)
 - YAML fields and schema versions: [YAML Schema Reference](../reference/yaml-schemas.md)
 - Architecture and design context: [Architecture Overview](../architecture/overview.md)
