@@ -1,61 +1,93 @@
 package cli
 
 import (
-	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
-func TestInitCheck(t *testing.T) {
-	tmpDir := t.TempDir()
-	gdfDir := filepath.Join(tmpDir, ".gdf")
+func TestShouldSkipInitCheck(t *testing.T) {
+	tests := []struct {
+		name string
+		cmd  *cobra.Command
+		want bool
+	}{
+		{name: "init", cmd: initCmd, want: true},
+		{name: "version", cmd: versionCmd, want: true},
+		{name: "update", cmd: updateCmd, want: true},
+		{name: "shell", cmd: shellCmd, want: true},
+		{name: "shell completion subcommand", cmd: shellCompletionCmd, want: true},
+		{name: "profile list", cmd: profileListCmd, want: false},
+		{name: "status", cmd: statusCmd, want: false},
+		{name: "health doctor", cmd: healthDoctorCmd, want: false},
+	}
 
-	// Mock HOME to control platform.ConfigDir()
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", oldHome)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldSkipInitCheck(tt.cmd)
+			if got != tt.want {
+				t.Fatalf("shouldSkipInitCheck(%s) = %v, want %v", tt.cmd.Name(), got, tt.want)
+			}
+		})
+	}
+}
 
-	t.Run("command requires init - fail when missing", func(t *testing.T) {
-		// profile list should require init
-		err := rootCmd.PersistentPreRunE(profileListCmd, []string{})
-		if err == nil {
-			t.Error("expected error for uninitialized repo, got nil")
-		}
-	})
+func TestPersistentPreRunE_InitRequirement(t *testing.T) {
+	tests := []struct {
+		name      string
+		cmd       *cobra.Command
+		initRepo  bool
+		wantError bool
+	}{
+		{name: "profile list requires init", cmd: profileListCmd, initRepo: false, wantError: true},
+		{name: "status requires init", cmd: statusCmd, initRepo: false, wantError: true},
+		{name: "health doctor requires init", cmd: healthDoctorCmd, initRepo: false, wantError: true},
+		{name: "init exempted", cmd: initCmd, initRepo: false, wantError: false},
+		{name: "version exempted", cmd: versionCmd, initRepo: false, wantError: false},
+		{name: "shell completion exempted", cmd: shellCompletionCmd, initRepo: false, wantError: false},
+		{name: "profile list succeeds when initialized", cmd: profileListCmd, initRepo: true, wantError: false},
+		{name: "status succeeds when initialized", cmd: statusCmd, initRepo: true, wantError: false},
+		{name: "health doctor succeeds when initialized", cmd: healthDoctorCmd, initRepo: true, wantError: false},
+	}
 
-	t.Run("command exempted from init - success when missing", func(t *testing.T) {
-		// version should NOT require init
-		err := rootCmd.PersistentPreRunE(versionCmd, []string{})
-		if err != nil {
-			t.Errorf("expected no error for version command, got %v", err)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("HOME", home)
 
-		// init should NOT require init
-		err = rootCmd.PersistentPreRunE(initCmd, []string{})
-		if err != nil {
-			t.Errorf("expected no error for init command, got %v", err)
-		}
+			if tt.initRepo {
+				gdfDir := filepath.Join(home, ".gdf")
+				configureGitUserGlobal(t, home)
+				if err := createNewRepo(gdfDir); err != nil {
+					t.Fatalf("createNewRepo() error = %v", err)
+				}
+			}
 
-		// shell should NOT require init
-		err = rootCmd.PersistentPreRunE(shellCmd, []string{})
-		if err != nil {
-			t.Errorf("expected no error for shell command, got %v", err)
-		}
-	})
+			err := rootCmd.PersistentPreRunE(tt.cmd, []string{})
+			if tt.wantError {
+				if err == nil {
+					t.Fatalf("PersistentPreRunE(%s) expected error, got nil", tt.cmd.Name())
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("PersistentPreRunE(%s) unexpected error = %v", tt.cmd.Name(), err)
+			}
+		})
+	}
+}
 
-	t.Run("command requires init - success when present", func(t *testing.T) {
-		// Configure git user for test repo creation
-		configureGitUserGlobal(t, tmpDir)
+func TestPersistentPreRunE_UninitializedMessage(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
 
-		// Initialize the repo
-		if err := createNewRepo(gdfDir); err != nil {
-			t.Fatalf("failed to initialize repo: %v", err)
-		}
-
-		// profile list should now succeed
-		err := rootCmd.PersistentPreRunE(profileListCmd, []string{})
-		if err != nil {
-			t.Errorf("expected no error for initialized repo, got %v", err)
-		}
-	})
+	err := rootCmd.PersistentPreRunE(statusCmd, []string{})
+	if err == nil {
+		t.Fatal("PersistentPreRunE(status) expected error, got nil")
+	}
+	if got := err.Error(); got == "" || !strings.Contains(got, "Please run 'gdf init' first.") {
+		t.Fatalf("unexpected init error message: %q", got)
+	}
 }

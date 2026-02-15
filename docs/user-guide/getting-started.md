@@ -100,6 +100,8 @@ Verify:
 
 ```bash
 gdf status
+gdf status diff
+gdf health doctor
 gdf profile show base
 gdf alias list
 ```
@@ -129,6 +131,13 @@ To restore managed files back to regular files at original locations:
 
 ```bash
 gdf restore
+```
+
+To validate configuration and run a safe auto-repair pass:
+
+```bash
+gdf health validate
+gdf health fix
 ```
 
 ## Next Steps

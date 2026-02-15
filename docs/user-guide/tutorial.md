@@ -172,11 +172,78 @@ gdf apply base
 
 ```bash
 gdf status
+gdf status diff
+gdf health doctor
 gdf alias list
 gdf profile show base
 ```
 
 At this point, you already have the core GDF loop working.
+
+## Why the New Health and Status Commands Matter
+
+As your setup grows, two classes of problems become common:
+- repository definition issues (invalid YAML, broken references, invalid conditions)
+- machine drift (missing links, mismatched targets, missing generated shell integration)
+
+The `status` and `health` command families exist to catch these issues early.
+
+### `gdf status`
+
+Use this as your high-level snapshot:
+- what profiles are currently applied
+- when they were last applied
+- whether drift exists
+
+### `gdf status diff`
+
+Use this after `gdf status` reports drift. It explains exactly what changed, including:
+- missing managed source files
+- missing target files
+- non-symlink targets
+- symlink destination mismatches
+
+### `gdf health validate`
+
+Use this before apply (and in CI) to validate repository definitions:
+- config/profile/app schema and version checks
+- semantic validation
+- profile-to-app reference integrity
+
+### `gdf health doctor`
+
+Use this to verify machine readiness:
+- repository structure/readability
+- generated shell integration presence
+- package manager detectability
+- write permissions
+
+### `gdf health fix`
+
+Use this after `gdf health doctor` to apply safe, reviewable remediations for common setup issues.
+
+### `gdf health ci`
+
+Use this in automation for fail-fast health checks:
+
+```bash
+gdf health ci --json --non-interactive
+```
+
+### Automation Flags
+
+- `--json`: machine-readable output
+- `--non-interactive`: never prompt; fail when confirmation is required
+- `--yes`: auto-approve supported prompts
+
+### Recommended Pre-Apply Safety Loop
+
+```bash
+gdf health validate
+gdf health doctor
+gdf apply --dry-run base
+gdf status
+```
 
 ## Build a Real Profile Strategy
 
@@ -316,7 +383,10 @@ gdf apply base
 
 Use these consistently:
 - `gdf apply --dry-run ...` before every apply
-- `gdf status` to verify applied state
+- `gdf health validate` to catch definition issues before changes
+- `gdf health doctor` to verify machine readiness
+- `gdf status` to verify applied state and drift summary
+- `gdf status diff` to inspect exact drift details
 - `gdf rollback` to undo last operation log
 - `gdf rollback --target ~/.zshrc --choose-snapshot` to restore one file from history
 - `gdf restore` if you need to replace managed symlinks with real files at original paths

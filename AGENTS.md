@@ -57,7 +57,7 @@ GDF (Go Dotfiles) is a cross-platform dotfile manager written in Go. It uses the
 
 - `TASKS.md`: only pending/in-progress items.
 - `CHANGELOG.md`: keep `[Unreleased]` updated for user-facing changes only.
-- `IMPLEMENTATION_PLAN.md`: update with design/phase changes.
+- `IMPLEMENTATION_PLAN.md`: use for the active feature only; clear the file when that feature is fully implemented.
 
 ### Changelog Writing Standard
 
@@ -87,4 +87,5 @@ Do not start implementation until the user explicitly approves the plan and asks
 3. Update docs.
 4. Remove completed task from `TASKS.md`.
 5. Add changelog entry under `[Unreleased]`.
-6. Use a conventional commit message.
+6. Clear `IMPLEMENTATION_PLAN.md` once the feature is complete and ready for the next feature plan.
+7. Use a conventional commit message.

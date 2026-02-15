@@ -109,3 +109,46 @@ func TestApplyAllowRiskyBypassesConfirmation(t *testing.T) {
 		t.Fatalf("runApply() error = %v", err)
 	}
 }
+
+func TestApplyDryRunValidationFailureReturnsHealthExitCode(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	os.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDryRun := applyDryRun
+	defer func() { applyDryRun = oldDryRun }()
+	applyDryRun = true
+
+	err := runApply(nil, []string{"default"})
+	if err == nil {
+		t.Fatal("runApply() expected error on dry-run validation failure")
+	}
+	if got := ExitCode(err); got != exitCodeHealthIssues {
+		t.Fatalf("ExitCode(err) = %d, want %d", got, exitCodeHealthIssues)
+	}
+}
+
+func TestDefaultRiskConfirmationPromptNonInteractive(t *testing.T) {
+	oldNonInteractive := globalNonInteractive
+	oldYes := globalYes
+	globalNonInteractive = true
+	globalYes = false
+	defer func() {
+		globalNonInteractive = oldNonInteractive
+		globalYes = oldYes
+	}()
+
+	ok, err := defaultRiskConfirmationPrompt(nil)
+	if err == nil {
+		t.Fatal("expected error in non-interactive mode")
+	}
+	if ok {
+		t.Fatal("expected confirmation false")
+	}
+	if got := ExitCode(err); got != exitCodeNonInteractiveStop {
+		t.Fatalf("ExitCode(err) = %d, want %d", got, exitCodeNonInteractiveStop)
+	}
+}

@@ -96,4 +96,6 @@ func Execute() error {
 func init() {
 	// Global flags will be added here
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
+	rootCmd.PersistentFlags().BoolVar(&globalYes, "yes", false, "Automatically approve safe interactive prompts")
+	rootCmd.PersistentFlags().BoolVar(&globalNonInteractive, "non-interactive", false, "Disable interactive prompts and fail when confirmation is required")
 }

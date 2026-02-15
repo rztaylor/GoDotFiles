@@ -271,3 +271,23 @@ func TestApplyCircularDependency(t *testing.T) {
 		t.Errorf("expected circular dependency error, got: %v", err)
 	}
 }
+
+func TestApplyJSONRequiresDryRun(t *testing.T) {
+	oldJSON := applyJSON
+	oldDryRun := applyDryRun
+	defer func() {
+		applyJSON = oldJSON
+		applyDryRun = oldDryRun
+	}()
+
+	applyJSON = true
+	applyDryRun = false
+
+	err := runApply(nil, []string{"default"})
+	if err == nil {
+		t.Fatal("expected error when using --json without --dry-run")
+	}
+	if !strings.Contains(err.Error(), "only supported with --dry-run") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

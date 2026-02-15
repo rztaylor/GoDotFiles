@@ -7,7 +7,7 @@ GDF is built with a layered architecture that separates concerns and enables cro
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                         CLI (cobra)                              │
-│  init, add, track, alias, profile, apply, sync, git, doctor      │
+│  init, add, track, alias, profile, apply, status, health, sync   │
 └─────────────────────────────┬────────────────────────────────────┘
                               │
 ┌─────────────────────────────▼────────────────────────────────────┐

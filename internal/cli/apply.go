@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
@@ -41,12 +39,14 @@ All operations are logged to ~/.gdf/.operations/ for potential rollback.`,
 
 var applyDryRun bool
 var applyAllowRisky bool
+var applyJSON bool
 var applyRiskConfirmationPrompt = defaultRiskConfirmationPrompt
 
 func init() {
 	rootCmd.AddCommand(applyCmd)
 	applyCmd.Flags().BoolVar(&applyDryRun, "dry-run", false, "Show what would be done without making changes")
 	applyCmd.Flags().BoolVar(&applyAllowRisky, "allow-risky", false, "Proceed without confirmation when high-risk scripts are detected")
+	applyCmd.Flags().BoolVar(&applyJSON, "json", false, "Output dry-run plan as JSON")
 }
 
 func runApply(cmd *cobra.Command, args []string) error {
@@ -63,6 +63,29 @@ func runApply(cmd *cobra.Command, args []string) error {
 				Dotfiles: "backup_and_replace",
 			},
 		}
+	}
+
+	if applyJSON && !applyDryRun {
+		return fmt.Errorf("--json is currently only supported with --dry-run")
+	}
+
+	if applyDryRun {
+		validation, err := runHealthValidateReport(gdfDir)
+		if err != nil {
+			return err
+		}
+		if validation.Errors > 0 {
+			if applyJSON {
+				if err := writeHealthJSON(cmd.OutOrStdout(), validation); err != nil {
+					return err
+				}
+			}
+			return withExitCode(fmt.Errorf("dry-run blocked by validation issues"), exitCodeHealthIssues)
+		}
+	}
+
+	if applyJSON {
+		return runApplyDryRunJSON(cmd, profileNames, gdfDir, plat, cfg)
 	}
 
 	// Initialize operation logger
@@ -382,20 +405,12 @@ func runApply(cmd *cobra.Command, args []string) error {
 }
 
 func defaultRiskConfirmationPrompt(findings []engine.RiskFinding) (bool, error) {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		return false, fmt.Errorf("checking stdin: %w", err)
-	}
-	if fi.Mode()&os.ModeCharDevice == 0 {
-		return false, fmt.Errorf("high-risk configuration detected in non-interactive mode; re-run with --allow-risky to proceed")
+	if globalNonInteractive && !globalYes {
+		return false, withExitCode(
+			fmt.Errorf("high-risk configuration detected in non-interactive mode; re-run with --allow-risky or --yes to proceed"),
+			exitCodeNonInteractiveStop,
+		)
 	}
 
-	fmt.Print("\nProceed despite these high-risk commands? [y/N]: ")
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return false, fmt.Errorf("reading confirmation input: %w", err)
-	}
-	v := strings.ToLower(strings.TrimSpace(input))
-	return v == "y" || v == "yes", nil
+	return confirmPrompt("\nProceed despite these high-risk commands? [y/N]: ")
 }

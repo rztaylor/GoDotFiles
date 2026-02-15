@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,6 +29,26 @@ func TestStatusCommand_NoState(t *testing.T) {
 
 	if len(st.AppliedProfiles) != 0 {
 		t.Errorf("AppliedProfiles count = %d, want 0", len(st.AppliedProfiles))
+	}
+}
+
+func TestStatusCommand_RequiresInitialization(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	oldHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", oldHome)
+
+	var out bytes.Buffer
+	statusCmd.SetOut(&out)
+	defer statusCmd.SetOut(os.Stdout)
+
+	err := runStatus(statusCmd, nil)
+	if err == nil {
+		t.Fatal("runStatus() expected error for uninitialized repo")
+	}
+	if !strings.Contains(err.Error(), "not initialized") {
+		t.Fatalf("runStatus() error = %v, want not initialized message", err)
 	}
 }
 

@@ -9,13 +9,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - Add `gdf shell completion <bash|zsh>` to generate shell completion scripts for interactive shell setup.
 - Add optional event-based shell auto-reload hooks so updated shell integration is picked up automatically on the next prompt.
+- Add `gdf health validate`, `gdf health doctor`, `gdf health fix`, and `gdf health ci` for validation, diagnostics, safe repair, and CI health checks.
+- Add `gdf status diff` to show detailed drift findings for managed targets.
+- Add stable CLI exit codes for health and non-interactive failure paths to make scripting more reliable.
 
 ### Changed
 - Improve the getting started guide with a clearer quickstart flow and valid follow-up documentation links.
 - Update `gdf init` shell onboarding to ask whether to enable event-based auto-reload (default yes) for faster out-of-the-box shell updates.
 - Update `gdf init` onboarding to offer shell completion installation for the detected shell by default, with manual commands as fallback.
+- Add `--json` output for `gdf status`, `gdf status diff`, `gdf health validate`, `gdf health doctor`, and `gdf health ci`.
+- Add global `--yes` and `--non-interactive` flags for deterministic prompt handling in health and risky-apply flows.
+- Add `gdf apply --dry-run --json` plan output for automation workflows.
 
 ### Fixed
+- Require `gdf health` commands to run only inside an initialized `~/.gdf` repository, matching other repo-dependent commands.
+- Ensure `gdf status` reports an initialization error when `~/.gdf` is not initialized.
 
 ## [0.8.0] - 2026-02-15
 

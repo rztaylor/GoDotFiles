@@ -10,6 +10,8 @@ Complete reference for all gdf commands.
 | Flag            | Description               |
 | --------------- | ------------------------- |
 | `-v, --verbose` | Enable verbose output     |
+| `--yes`         | Auto-approve supported prompts |
+| `--non-interactive` | Disable supported prompts and fail when confirmation is required |
 | `-h, --help`    | Show help for any command |
 
 ## Commands
@@ -128,7 +130,7 @@ gdf track ~/.aws/config -a aws-cli --secret
 
 ---
 
-### Aliases & Functions
+### Aliases
 
 #### `gdf alias add <name> <command> [flags]`
 
@@ -151,10 +153,6 @@ List all aliases from all app bundles and global aliases. Aliases are grouped by
 #### `gdf alias remove <name>`
 
 Remove an alias. Searches all app bundles and global aliases.
-
-#### `gdf fn <name>`
-
-Add a shell function. Opens editor with template.
 
 ---
 
@@ -218,6 +216,7 @@ Apply one or more profiles to the system.
 | ----------- | ---------------------------------------------- |
 | `--dry-run` | Show what would be done without making changes |
 | `--allow-risky` | Proceed even if high-risk script patterns are detected |
+| `--json` | Output dry-run plan as JSON (requires `--dry-run`) |
 
 This command performs the following operations:
 
@@ -270,10 +269,28 @@ gdf rollback --target ~/.zshrc --choose-snapshot
 
 #### `gdf status`
 
-Show which profiles are currently applied and their status.
+Show applied profiles, app summary, and drift overview.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--json` | Output status as JSON |
 
 ```bash
 gdf status
+gdf status --json
+```
+
+#### `gdf status diff`
+
+Show detailed drift findings for managed targets.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--json` | Output drift details as JSON |
+
+```bash
+gdf status diff
+gdf status diff --json
 ```
 
 **Output:**
@@ -289,9 +306,10 @@ Last applied: 2024-02-11 18:30:00
 ```
 
 **Behavior:**
-- Shows all applied profiles with app counts and timestamps
-- Lists all apps across all applied profiles (deduplicated)
-- Displays when profiles were last applied
+- Shows applied profile timestamps and app counts
+- Lists deduplicated app names
+- Shows drift summary (source missing, target missing, mismatch, non-symlink)
+- Suggests `gdf status diff` when drift exists
 - If no profiles are applied, suggests using `gdf apply`
 
 **State Tracking:**
@@ -400,9 +418,33 @@ gdf apply
 
 ### Maintenance
 
-#### `gdf doctor`
+#### `gdf health validate`
 
-Check system health and report issues.
+Validate config, profile, and app YAML plus semantic integrity.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--json` | Output findings as JSON |
+
+#### `gdf health doctor`
+
+Run environment health checks (repo structure, shell integration, package manager availability, permissions).
+
+| Flag | Description |
+| ---- | ----------- |
+| `--json` | Output findings as JSON |
+
+#### `gdf health fix`
+
+Apply safe, reviewable auto-fixes for common doctor findings.
+
+#### `gdf health ci`
+
+Run fail-fast validation and doctor checks for CI workflows.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--json` | Output combined findings as JSON |
 
 #### `gdf shell reload`
 
