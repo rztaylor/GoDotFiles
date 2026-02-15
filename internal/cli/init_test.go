@@ -159,6 +159,53 @@ func TestEnsureGeneratedInitScript_Idempotent(t *testing.T) {
 	}
 }
 
+func TestCloneRepoEnsuresCoreDirectories(t *testing.T) {
+	tmpDir := t.TempDir()
+	sourceHome := filepath.Join(tmpDir, "source-home")
+	cloneHome := filepath.Join(tmpDir, "clone-home")
+	sourceRepo := filepath.Join(sourceHome, ".gdf-source")
+	cloneRepoPath := filepath.Join(cloneHome, ".gdf")
+
+	if err := os.MkdirAll(sourceHome, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(cloneHome, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	oldHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", oldHome)
+
+	os.Setenv("HOME", sourceHome)
+	configureGitUserGlobal(t, sourceHome)
+	if err := createNewRepo(sourceRepo); err != nil {
+		t.Fatalf("createNewRepo(source) error = %v", err)
+	}
+
+	// Simulate repos where empty directories are not tracked after clone.
+	if err := os.RemoveAll(filepath.Join(sourceRepo, "dotfiles")); err != nil {
+		t.Fatalf("removing source dotfiles dir: %v", err)
+	}
+	if err := os.RemoveAll(filepath.Join(sourceRepo, "generated")); err != nil {
+		t.Fatalf("removing source generated dir: %v", err)
+	}
+
+	os.Setenv("HOME", cloneHome)
+	configureGitUserGlobal(t, cloneHome)
+	if err := cloneRepo(sourceRepo, cloneRepoPath); err != nil {
+		t.Fatalf("cloneRepo() error = %v", err)
+	}
+
+	for _, dir := range []string{"apps", "profiles", "dotfiles", "generated"} {
+		if _, err := os.Stat(filepath.Join(cloneRepoPath, dir)); err != nil {
+			t.Fatalf("expected %s directory after clone, got err=%v", dir, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(cloneRepoPath, "generated", "init.sh")); err != nil {
+		t.Fatalf("expected generated/init.sh after clone, got err=%v", err)
+	}
+}
+
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstr(s, substr))
 }

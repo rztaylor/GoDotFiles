@@ -88,6 +88,13 @@ func runInitSetup(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Using existing GDF repository at %s\n", gdfDir)
 	}
 
+	if err := ensureCoreRepoDirectories(gdfDir); err != nil {
+		return err
+	}
+	if err := ensureGeneratedInitScript(gdfDir); err != nil {
+		return err
+	}
+
 	profileName := strings.TrimSpace(setupProfile)
 	if profileName == "" {
 		profileName = "default"
@@ -173,17 +180,9 @@ func createNewRepo(gdfDir string) error {
 		return fmt.Errorf("initializing repository: %w", err)
 	}
 
-	// Create directory structure
-	dirs := []string{
-		"apps",
-		"profiles",
-		"dotfiles",
-	}
-	for _, dir := range dirs {
-		path := filepath.Join(gdfDir, dir)
-		if err := os.MkdirAll(path, 0755); err != nil {
-			return fmt.Errorf("creating %s directory: %w", dir, err)
-		}
+	// Create directory structure.
+	if err := ensureCoreRepoDirectories(gdfDir); err != nil {
+		return err
 	}
 
 	// Create .gitignore
@@ -240,6 +239,9 @@ func cloneRepo(url, gdfDir string) error {
 
 	fmt.Println("✓ Repository cloned")
 
+	if err := ensureCoreRepoDirectories(gdfDir); err != nil {
+		return err
+	}
 	if err := ensureGeneratedInitScript(gdfDir); err != nil {
 		return err
 	}
@@ -254,6 +256,17 @@ func cloneRepo(url, gdfDir string) error {
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Apply your profile: gdf apply")
 
+	return nil
+}
+
+func ensureCoreRepoDirectories(gdfDir string) error {
+	dirs := []string{"apps", "profiles", "dotfiles", "generated"}
+	for _, dir := range dirs {
+		path := filepath.Join(gdfDir, dir)
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return fmt.Errorf("creating %s directory: %w", dir, err)
+		}
+	}
 	return nil
 }
 

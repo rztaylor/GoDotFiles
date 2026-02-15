@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Create the `apps/` directory on demand during `gdf app add` so adding a recipe or new app succeeds even when the directory is missing.
 - Improve package install selection during `gdf apply` by honoring app and global manager preferences and skipping reinstall when a package is already installed via any configured available manager.
 - Generate fully-expanded `config.yaml` defaults (including package manager, updates, and shell integration sections) during init and config repair so all available options are visible by default.
+- Ensure `gdf init` and cloned-repo setup paths always recreate core directories (`apps`, `profiles`, `dotfiles`, `generated`) and generated init placeholder so health checks do not immediately report missing baseline paths.
 
 ## [1.1.0] - 2026-02-15
 
