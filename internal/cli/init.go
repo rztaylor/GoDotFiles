@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/git"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/rztaylor/GoDotFiles/internal/shell"
@@ -237,11 +238,123 @@ func offerShellInjection() error {
 
 	fmt.Println("✓ Added shell integration")
 	fmt.Printf("  Source line added to %s\n", getRCFileName(shellType))
+
+	if shellType == shell.Bash || shellType == shell.Zsh {
+		fmt.Println()
+		fmt.Print("Enable event-based shell auto-reload on prompt? [Y/n]: ")
+		autoReloadResponse, err := reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+
+		autoReloadResponse = strings.TrimSpace(strings.ToLower(autoReloadResponse))
+		enableAutoReload := autoReloadResponse == "" || autoReloadResponse == "y" || autoReloadResponse == "yes"
+		if enableAutoReload {
+			cfgPath := filepath.Join(platform.ConfigDir(), "config.yaml")
+			if err := setAutoReloadEnabled(cfgPath, true); err != nil {
+				return fmt.Errorf("enabling shell auto-reload: %w", err)
+			}
+			fmt.Println("✓ Enabled shell auto-reload in config")
+		} else {
+			fmt.Println("Skipped auto-reload setup.")
+		}
+
+		fmt.Println()
+		fmt.Print("Install gdf shell completion now? [Y/n]: ")
+		completionResponse, err := reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+
+		completionResponse = strings.TrimSpace(strings.ToLower(completionResponse))
+		installCompletion := completionResponse == "" || completionResponse == "y" || completionResponse == "yes"
+		if installCompletion {
+			completionPath, err := installShellCompletion(shellType)
+			if err != nil {
+				fmt.Printf("⚠ Could not install shell completion automatically: %v\n", err)
+				printManualCompletionInstructions(shellType)
+			} else {
+				fmt.Printf("✓ Installed shell completion: %s\n", completionPath)
+			}
+		} else {
+			fmt.Println("Skipped shell completion setup.")
+			printManualCompletionInstructions(shellType)
+		}
+	}
+
 	fmt.Println("\nTo activate in current session:")
 	fmt.Println("  source ~/.gdf/generated/init.sh")
 	fmt.Println("Or restart your shell.")
 
 	return nil
+}
+
+func setAutoReloadEnabled(configPath string, enabled bool) error {
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		return err
+	}
+	if cfg.ShellIntegration == nil {
+		cfg.ShellIntegration = &config.ShellIntegrationConfig{}
+	}
+	cfg.ShellIntegration.AutoReloadEnabled = &enabled
+	return cfg.Save(configPath)
+}
+
+func installShellCompletion(shellType shell.ShellType) (string, error) {
+	home := os.Getenv("HOME")
+	if home == "" {
+		return "", fmt.Errorf("HOME is not set")
+	}
+
+	var completionPath string
+	switch shellType {
+	case shell.Bash:
+		completionPath = filepath.Join(home, ".local", "share", "bash-completion", "completions", "gdf")
+	case shell.Zsh:
+		completionPath = filepath.Join(home, ".zfunc", "_gdf")
+	default:
+		return "", fmt.Errorf("unsupported shell for completion install: %s", shellType)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(completionPath), 0755); err != nil {
+		return "", fmt.Errorf("creating completion directory: %w", err)
+	}
+
+	f, err := os.Create(completionPath)
+	if err != nil {
+		return "", fmt.Errorf("creating completion file: %w", err)
+	}
+	defer f.Close()
+
+	switch shellType {
+	case shell.Bash:
+		if err := rootCmd.GenBashCompletionV2(f, true); err != nil {
+			return "", fmt.Errorf("generating bash completion: %w", err)
+		}
+	case shell.Zsh:
+		if err := rootCmd.GenZshCompletion(f); err != nil {
+			return "", fmt.Errorf("generating zsh completion: %w", err)
+		}
+	}
+
+	return completionPath, nil
+}
+
+func printManualCompletionInstructions(shellType shell.ShellType) {
+	switch shellType {
+	case shell.Bash:
+		fmt.Println("To install manually:")
+		fmt.Println("  gdf shell completion bash > ~/.local/share/bash-completion/completions/gdf")
+	case shell.Zsh:
+		fmt.Println("To install manually:")
+		fmt.Println("  mkdir -p ~/.zfunc")
+		fmt.Println("  gdf shell completion zsh > ~/.zfunc/_gdf")
+	default:
+		fmt.Println("Generate completion manually with:")
+		fmt.Println("  gdf shell completion bash")
+		fmt.Println("  gdf shell completion zsh")
+	}
 }
 
 // getRCFileName returns the RC file name for display purposes.

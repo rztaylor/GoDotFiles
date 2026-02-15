@@ -81,7 +81,7 @@ func shouldSkipInitCheck(cmd *cobra.Command) bool {
 	// Check if the command itself or any of its parents is 'init', 'version', or 'help'
 	for c := cmd; c != nil; c = c.Parent() {
 		name := c.Name()
-		if name == "init" || name == "version" || name == "help" || name == "update" {
+		if name == "init" || name == "version" || name == "help" || name == "update" || name == "shell" {
 			return true
 		}
 	}

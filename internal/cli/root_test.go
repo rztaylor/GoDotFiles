@@ -35,6 +35,12 @@ func TestInitCheck(t *testing.T) {
 		if err != nil {
 			t.Errorf("expected no error for init command, got %v", err)
 		}
+
+		// shell should NOT require init
+		err = rootCmd.PersistentPreRunE(shellCmd, []string{})
+		if err != nil {
+			t.Errorf("expected no error for shell command, got %v", err)
+		}
 	})
 
 	t.Run("command requires init - success when present", func(t *testing.T) {

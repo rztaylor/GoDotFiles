@@ -418,6 +418,43 @@ func TestGenerator_InitSnippets(t *testing.T) {
 	}
 }
 
+func TestGenerator_AutoReloadHooks(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "init.sh")
+
+	g := NewGenerator()
+	err := g.GenerateWithOptions(nil, Bash, outputPath, nil, GenerateOptions{EnableAutoReload: true})
+	if err != nil {
+		t.Fatalf("GenerateWithOptions() error = %v", err)
+	}
+
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("reading generated file: %v", err)
+	}
+
+	got := string(content)
+	if !strings.Contains(got, "_gdf_auto_reload_check()") {
+		t.Fatalf("expected auto-reload function in bash output:\n%s", got)
+	}
+	if !strings.Contains(got, "PROMPT_COMMAND") {
+		t.Fatalf("expected PROMPT_COMMAND hook in bash output:\n%s", got)
+	}
+
+	zshOutput := filepath.Join(tmpDir, "init.zsh")
+	err = g.GenerateWithOptions(nil, Zsh, zshOutput, nil, GenerateOptions{EnableAutoReload: true})
+	if err != nil {
+		t.Fatalf("GenerateWithOptions() zsh error = %v", err)
+	}
+	zshContent, err := os.ReadFile(zshOutput)
+	if err != nil {
+		t.Fatalf("reading generated zsh file: %v", err)
+	}
+	if !strings.Contains(string(zshContent), "precmd_functions") {
+		t.Fatalf("expected zsh precmd hook in output:\n%s", string(zshContent))
+	}
+}
+
 func TestGenerator_InitOrdering(t *testing.T) {
 	bundles := []*apps.Bundle{
 		{

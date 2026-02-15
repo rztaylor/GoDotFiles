@@ -40,7 +40,10 @@ GDF stores everything under `~/.gdf/`.
 
 ## 3. Activate Shell Integration
 
-`gdf init` already prompts to add the shell source line to your RC file automatically.
+`gdf init` prompts to:
+- Add the shell source line to your RC file.
+- Enable event-based auto-reload on prompt (recommended).
+- Install shell completion for your detected shell (recommended).
 
 For the current terminal session, just load generated integration:
 

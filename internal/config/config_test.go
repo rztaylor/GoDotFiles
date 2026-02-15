@@ -219,3 +219,27 @@ func TestHistoryConfig_Defaults(t *testing.T) {
 		}
 	})
 }
+
+func TestShellIntegrationConfig_AutoReloadEnabledDefault(t *testing.T) {
+	t.Run("nil shell integration defaults disabled", func(t *testing.T) {
+		var s *ShellIntegrationConfig
+		if s.AutoReloadEnabledDefault() {
+			t.Fatal("AutoReloadEnabledDefault() = true, want false")
+		}
+	})
+
+	t.Run("nil value defaults disabled", func(t *testing.T) {
+		s := &ShellIntegrationConfig{}
+		if s.AutoReloadEnabledDefault() {
+			t.Fatal("AutoReloadEnabledDefault() = true, want false")
+		}
+	})
+
+	t.Run("explicit enabled true", func(t *testing.T) {
+		v := true
+		s := &ShellIntegrationConfig{AutoReloadEnabled: &v}
+		if !s.AutoReloadEnabledDefault() {
+			t.Fatal("AutoReloadEnabledDefault() = false, want true")
+		}
+	})
+}

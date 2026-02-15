@@ -7,15 +7,11 @@
 
 ### Phase 3: Enhanced UX & Advanced Features
 
-#### 3.1 Status, Doctor & Validation
+#### 3.2 Status, Doctor & Validation
 - [ ] Implement rich `gdf status` output
 - [ ] Implement `gdf doctor` health check
 - [ ] Implement `gdf fix` auto-repair
 - [ ] Implement `gdf validate` for YAML checking
-
-#### 3.2 Shell Experience
-- [ ] Implement gdf shell completion for bash and zsh
-- [ ] Event-based shell auto-reload (using shell hooks to auto-source on prompt)
 
 #### 3.3 Interactive Wizards
 - [ ] Implement interactive `gdf setup` wizard

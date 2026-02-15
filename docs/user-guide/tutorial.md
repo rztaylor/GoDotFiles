@@ -19,13 +19,13 @@ If your stack differs from the examples, reuse the same pattern with your own ap
 
 ## Why GDF Instead of Manual Dotfile Management?
 
-| Without GDF | With GDF |
-| --- | --- |
-| Dotfiles are scattered under home directories | Dotfiles are centralized in `~/.gdf/dotfiles/` |
-| Setup steps are tribal knowledge | Setup is encoded in app/profile YAML |
-| Aliases/functions drift between machines | Shell integration is generated from source of truth |
-| New machine setup is manual and error-prone | `gdf init` + `gdf apply` restores environment quickly |
-| Rollback is ad hoc | `gdf rollback` and history snapshots provide recovery |
+| Without GDF                                   | With GDF                                              |
+| --------------------------------------------- | ----------------------------------------------------- |
+| Dotfiles are scattered under home directories | Dotfiles are centralized in `~/.gdf/dotfiles/`        |
+| Setup steps are tribal knowledge              | Setup is encoded in app/profile YAML                  |
+| Aliases/functions drift between machines      | Shell integration is generated from source of truth   |
+| New machine setup is manual and error-prone   | `gdf init` + `gdf apply` restores environment quickly |
+| Rollback is ad hoc                            | `gdf rollback` and history snapshots provide recovery |
 
 GDF is not only a symlink tool. It models your environment as **app bundles + profiles + Git sync**, so your setup becomes a maintainable system.
 
@@ -103,7 +103,12 @@ gdf init git@github.com:your-username/dotfiles.git
 
 ### 3. Activate shell integration
 
-`gdf init` already prompts to add the source line to your shell RC file automatically.
+`gdf init` already prompts to:
+- Add the source line to your shell RC file.
+- Enable event-based auto-reload on prompt (recommended, default: `Y`).
+- Install shell completion for your detected shell (recommended, default: `Y`).
+
+If you accept auto-reload, future `gdf apply` shell updates are picked up automatically on the next prompt in interactive bash/zsh sessions.
 
 For your current terminal session:
 
@@ -116,6 +121,17 @@ If you skipped the prompt (or auto-injection failed), add this to your shell RC 
 ```bash
 [ -f ~/.gdf/generated/init.sh ] && source ~/.gdf/generated/init.sh
 source ~/.zshrc  # or ~/.bashrc
+```
+
+If you skipped completion setup during `gdf init`, you can install it manually:
+
+```bash
+# bash
+gdf shell completion bash > ~/.local/share/bash-completion/completions/gdf
+
+# zsh
+mkdir -p ~/.zfunc
+gdf shell completion zsh > ~/.zfunc/_gdf
 ```
 
 ### 4. Create a base profile
@@ -267,6 +283,8 @@ gdf apply base sre
 source ~/.gdf/generated/init.sh
 ```
 
+For completion on the second machine, run `gdf shell completion bash` or `gdf shell completion zsh` once during setup.
+
 This is the core payoff: your setup is reproducible, not rebuilt manually.
 
 ## Day-to-Day Workflow
@@ -372,7 +390,7 @@ If package metadata is missing for your platform, GDF can prompt to learn instal
 - Tracking secret material without `--secret`
 - Applying without `--dry-run`
 - Putting every app in one profile instead of context-based profiles
-- Forgetting to reload shell after alias/init changes
+- Disabling auto-reload and then forgetting to manually reload shell after alias/init changes
 - Using vague commit messages for environment changes
 
 ## Next Steps

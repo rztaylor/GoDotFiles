@@ -23,9 +23,20 @@ prints the source command for you to copy and paste or eval.`,
 	RunE: runShellReload,
 }
 
+var shellCompletionCmd = &cobra.Command{
+	Use:   "completion [bash|zsh]",
+	Short: "Generate shell completion scripts",
+	Long: `Generate shell completion scripts for gdf.
+
+Write to stdout and redirect to the shell's completion directory.`,
+	Args: cobra.ExactArgs(1),
+	RunE: runShellCompletion,
+}
+
 func init() {
 	rootCmd.AddCommand(shellCmd)
 	shellCmd.AddCommand(shellReloadCmd)
+	shellCmd.AddCommand(shellCompletionCmd)
 }
 
 func runShellReload(cmd *cobra.Command, args []string) error {
@@ -47,4 +58,15 @@ func runShellReload(cmd *cobra.Command, args []string) error {
 	fmt.Println("Or restart your shell.")
 
 	return nil
+}
+
+func runShellCompletion(cmd *cobra.Command, args []string) error {
+	switch args[0] {
+	case "bash":
+		return rootCmd.GenBashCompletionV2(cmd.OutOrStdout(), true)
+	case "zsh":
+		return rootCmd.GenZshCompletion(cmd.OutOrStdout())
+	default:
+		return fmt.Errorf("unsupported shell %q: expected bash or zsh", args[0])
+	}
 }

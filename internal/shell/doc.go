@@ -8,6 +8,7 @@
 //   - Setting up environment variables
 //   - Emitting app startup/init snippets
 //   - Loading shell completions
+//   - Optional event-based auto-reload hooks on prompt
 //   - Auto-injecting source line into shell RC files
 //   - Supporting bash and zsh shells
 //

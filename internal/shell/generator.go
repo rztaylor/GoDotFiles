@@ -13,6 +13,12 @@ import (
 // Generator generates shell integration scripts.
 type Generator struct{}
 
+// GenerateOptions controls optional shell generation behavior.
+type GenerateOptions struct {
+	// EnableAutoReload appends shell prompt hooks that re-source init.sh after updates.
+	EnableAutoReload bool
+}
+
 // NewGenerator creates a new shell generator.
 func NewGenerator() *Generator {
 	return &Generator{}
@@ -21,6 +27,11 @@ func NewGenerator() *Generator {
 // Generate generates a shell integration script from app bundles.
 // globalAliases contains aliases not associated with any app bundle.
 func (g *Generator) Generate(bundles []*apps.Bundle, shellType ShellType, outputPath string, globalAliases map[string]string) error {
+	return g.GenerateWithOptions(bundles, shellType, outputPath, globalAliases, GenerateOptions{})
+}
+
+// GenerateWithOptions generates a shell integration script from app bundles with optional behavior.
+func (g *Generator) GenerateWithOptions(bundles []*apps.Bundle, shellType ShellType, outputPath string, globalAliases map[string]string, opts GenerateOptions) error {
 	if shellType == Unknown {
 		return fmt.Errorf("cannot generate script for unknown shell type")
 	}
@@ -64,6 +75,14 @@ func (g *Generator) Generate(bundles []*apps.Bundle, shellType ShellType, output
 	if completions != "" {
 		script.WriteString("\n# Completions\n")
 		script.WriteString(completions)
+	}
+
+	if opts.EnableAutoReload {
+		autoReload := g.generateAutoReload(shellType)
+		if autoReload != "" {
+			script.WriteString("\n# Auto-reload\n")
+			script.WriteString(autoReload)
+		}
 	}
 
 	// Ensure output directory exists
@@ -319,4 +338,66 @@ func (g *Generator) ExportAliases(bundles []*apps.Bundle, globalAliases map[stri
 		return fmt.Errorf("writing aliases file: %w", err)
 	}
 	return nil
+}
+
+func (g *Generator) generateAutoReload(shellType ShellType) string {
+	switch shellType {
+	case Bash:
+		return `
+_gdf_auto_reload_check() {
+  [ -n "${PS1-}" ] || return
+  [ -f "$HOME/.gdf/generated/init.sh" ] || return
+
+  local _gdf_mtime
+  _gdf_mtime="$(stat -c %Y "$HOME/.gdf/generated/init.sh" 2>/dev/null || stat -f %m "$HOME/.gdf/generated/init.sh" 2>/dev/null)"
+  [ -n "$_gdf_mtime" ] || return
+
+  if [ -z "${GDF_INIT_MTIME:-}" ]; then
+    GDF_INIT_MTIME="$_gdf_mtime"
+    return
+  fi
+
+  if [ "$GDF_INIT_MTIME" != "$_gdf_mtime" ]; then
+    GDF_INIT_MTIME="$_gdf_mtime"
+    source "$HOME/.gdf/generated/init.sh"
+  fi
+}
+
+if [[ ";${PROMPT_COMMAND};" != *";_gdf_auto_reload_check;"* ]]; then
+  if [ -n "${PROMPT_COMMAND:-}" ]; then
+    PROMPT_COMMAND="_gdf_auto_reload_check;${PROMPT_COMMAND}"
+  else
+    PROMPT_COMMAND="_gdf_auto_reload_check"
+  fi
+fi
+`
+	case Zsh:
+		return `
+_gdf_auto_reload_check() {
+  [ -n "${PS1-}" ] || return
+  [ -f "$HOME/.gdf/generated/init.sh" ] || return
+
+  local _gdf_mtime
+  _gdf_mtime="$(stat -c %Y "$HOME/.gdf/generated/init.sh" 2>/dev/null || stat -f %m "$HOME/.gdf/generated/init.sh" 2>/dev/null)"
+  [ -n "$_gdf_mtime" ] || return
+
+  if [ -z "${GDF_INIT_MTIME:-}" ]; then
+    GDF_INIT_MTIME="$_gdf_mtime"
+    return
+  fi
+
+  if [ "$GDF_INIT_MTIME" != "$_gdf_mtime" ]; then
+    GDF_INIT_MTIME="$_gdf_mtime"
+    source "$HOME/.gdf/generated/init.sh"
+  fi
+}
+
+typeset -ga precmd_functions
+if (( ${precmd_functions[(Ie)_gdf_auto_reload_check]} == 0 )); then
+  precmd_functions=(_gdf_auto_reload_check ${precmd_functions[@]})
+fi
+`
+	default:
+		return ""
+	}
 }

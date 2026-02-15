@@ -408,6 +408,17 @@ Check system health and report issues.
 
 Reload shell integration.
 
+#### `gdf shell completion <bash|zsh>`
+
+Generate shell completion script to stdout.
+
+```bash
+gdf shell completion bash > ~/.local/share/bash-completion/completions/gdf
+gdf shell completion zsh > ~/.zfunc/_gdf
+```
+
+After generating, reload your shell or source the completion file according to your shell setup.
+
 ---
 
 ### Updates

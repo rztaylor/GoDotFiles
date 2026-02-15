@@ -334,7 +334,10 @@ func runApply(cmd *cobra.Command, args []string) error {
 			ga = &apps.GlobalAliases{Aliases: make(map[string]string)}
 		}
 
-		if err := shellGen.Generate(resolvedApps, shellType, shellPath, ga.Aliases); err != nil {
+		opts := shell.GenerateOptions{
+			EnableAutoReload: cfg.ShellIntegration.AutoReloadEnabledDefault(),
+		}
+		if err := shellGen.GenerateWithOptions(resolvedApps, shellType, shellPath, ga.Aliases, opts); err != nil {
 			return fmt.Errorf("generating shell integration: %w", err)
 		}
 	}

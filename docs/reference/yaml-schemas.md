@@ -382,6 +382,10 @@ security:
 # Snapshot history retention
 history:
   max_size_mb: 512        # Max size for ~/.gdf/.history (default: 512)
+
+# Shell integration behavior
+shell_integration:
+  auto_reload_enabled: true | false   # Default: false (recommended true for interactive shells)
 ```
 
 ---

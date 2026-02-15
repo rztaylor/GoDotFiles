@@ -75,6 +75,7 @@ Generates shell integration:
 - Environment variables
 - Managed startup/init snippets from app definitions
 - Completions loading
+- Optional event-based auto-reload hook generation for bash/zsh
 
 ### `internal/platform`
 

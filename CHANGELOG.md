@@ -7,10 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- Add `gdf shell completion <bash|zsh>` to generate shell completion scripts for interactive shell setup.
+- Add optional event-based shell auto-reload hooks so updated shell integration is picked up automatically on the next prompt.
 
 ### Changed
 - Improve the getting started guide with a clearer quickstart flow and valid follow-up documentation links.
-- Clarify tutorial shell setup so `gdf init` auto-injection is treated as the default path and manual RC edits are fallback-only.
+- Update `gdf init` shell onboarding to ask whether to enable event-based auto-reload (default yes) for faster out-of-the-box shell updates.
+- Update `gdf init` onboarding to offer shell completion installation for the detected shell by default, with manual commands as fallback.
 
 ### Fixed
 
