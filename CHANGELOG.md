@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-02-15
+
+### Added
+- Add `gdf-shell` library pseudo-app to bootstrap profile-managed shell completion sourcing from `~/.gdf/generated/completions/{bash,zsh}`.
+
+### Changed
+- Expand library completion support by adding completion generation for `git`, `kubectl`, `gh`, `helm`, and `docker` recipes.
+- Generate app `shell.completions` outputs during `gdf apply` into managed completion files instead of relying on runtime completion command sourcing in `init.sh`.
+
+### Fixed
+- Create placeholder `~/.gdf/generated/init.sh` during `gdf init` so `source ~/.gdf/generated/init.sh` does not fail before first `gdf apply`.
+
 ## [1.0.0] - 2026-02-15
 
 ### Added
