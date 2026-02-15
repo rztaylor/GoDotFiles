@@ -120,6 +120,11 @@ func TestNoOpManager(t *testing.T) {
 		t.Errorf("NoOpManager.Install() error = %v, want nil", err)
 	}
 
+	// Test Uninstall - should not error
+	if err := mgr.Uninstall("anything"); err != nil {
+		t.Errorf("NoOpManager.Uninstall() error = %v, want nil", err)
+	}
+
 	// Test IsInstalled - should always return false
 	installed, err := mgr.IsInstalled("anything")
 	if err != nil {

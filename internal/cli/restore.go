@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,10 +36,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	fmt.Println("replacing the managed symlinks. It will also export your current aliases to a file")
 	fmt.Println("and update your shell configuration to use that file instead of GDF.")
 	fmt.Println("")
-	fmt.Print("To proceed, type 'confirmed': ")
-
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
+	input, err := readInteractiveLine("To proceed, type 'confirmed': ")
 	if err != nil {
 		return err
 	}
@@ -82,9 +78,11 @@ func runRestore(cmd *cobra.Command, args []string) error {
 
 	// Check if exists
 	if _, err := os.Stat(expandedAliasesPath); err == nil {
-		fmt.Printf("  File %s already exists. Overwrite? (y/N): ", expandedAliasesPath)
-		input, _ := reader.ReadString('\n')
-		if strings.ToLower(strings.TrimSpace(input)) != "y" {
+		ok, err := confirmPromptUnsafe(fmt.Sprintf("  File %s already exists. Overwrite? [y/N]: ", expandedAliasesPath))
+		if err != nil {
+			return err
+		}
+		if !ok {
 			fmt.Println("Skipping alias export.")
 
 			goto UpdateRC

@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/git"
@@ -214,16 +212,20 @@ func offerShellInjection() error {
 
 	fmt.Printf("\nDetected shell: %s\n", detectedShell)
 
+	if globalNonInteractive {
+		fmt.Println("Skipping interactive shell setup in non-interactive mode.")
+		fmt.Println("To add it manually, add this to your shell config:")
+		fmt.Println("  [ -f ~/.gdf/generated/init.sh ] && source ~/.gdf/generated/init.sh")
+		return nil
+	}
+
 	// Prompt user
-	fmt.Print("Add shell integration to your RC file? [Y/n]: ")
-	reader := bufio.NewReader(os.Stdin)
-	response, err := reader.ReadString('\n')
+	confirmInjection, err := confirmPromptDefaultYes("Add shell integration to your RC file? [Y/n]: ")
 	if err != nil {
 		return err
 	}
 
-	response = strings.TrimSpace(strings.ToLower(response))
-	if response == "n" || response == "no" {
+	if !confirmInjection {
 		fmt.Println("\nSkipped shell integration.")
 		fmt.Println("To add it manually, add this to your shell config:")
 		fmt.Println("  [ -f ~/.gdf/generated/init.sh ] && source ~/.gdf/generated/init.sh")
@@ -241,14 +243,10 @@ func offerShellInjection() error {
 
 	if shellType == shell.Bash || shellType == shell.Zsh {
 		fmt.Println()
-		fmt.Print("Enable event-based shell auto-reload on prompt? [Y/n]: ")
-		autoReloadResponse, err := reader.ReadString('\n')
+		enableAutoReload, err := confirmPromptDefaultYes("Enable event-based shell auto-reload on prompt? [Y/n]: ")
 		if err != nil {
 			return err
 		}
-
-		autoReloadResponse = strings.TrimSpace(strings.ToLower(autoReloadResponse))
-		enableAutoReload := autoReloadResponse == "" || autoReloadResponse == "y" || autoReloadResponse == "yes"
 		if enableAutoReload {
 			cfgPath := filepath.Join(platform.ConfigDir(), "config.yaml")
 			if err := setAutoReloadEnabled(cfgPath, true); err != nil {
@@ -260,14 +258,10 @@ func offerShellInjection() error {
 		}
 
 		fmt.Println()
-		fmt.Print("Install gdf shell completion now? [Y/n]: ")
-		completionResponse, err := reader.ReadString('\n')
+		installCompletion, err := confirmPromptDefaultYes("Install gdf shell completion now? [Y/n]: ")
 		if err != nil {
 			return err
 		}
-
-		completionResponse = strings.TrimSpace(strings.ToLower(completionResponse))
-		installCompletion := completionResponse == "" || completionResponse == "y" || completionResponse == "yes"
 		if installCompletion {
 			completionPath, err := installShellCompletion(shellType)
 			if err != nil {

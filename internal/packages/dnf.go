@@ -40,6 +40,26 @@ func (d *Dnf) Install(pkg string) error {
 	return nil
 }
 
+// Uninstall removes a package using dnf.
+func (d *Dnf) Uninstall(pkg string) error {
+	if pkg == "" {
+		return fmt.Errorf("package name cannot be empty")
+	}
+
+	execCmd := d.execCommand
+	if execCmd == nil {
+		execCmd = exec.Command
+	}
+
+	cmd := execCmd("sudo", "dnf", "remove", "-y", pkg)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to uninstall %s via dnf: %w\nOutput: %s", pkg, err, string(output))
+	}
+
+	return nil
+}
+
 // IsInstalled checks if a package is installed via dnf.
 func (d *Dnf) IsInstalled(pkg string) (bool, error) {
 	if pkg == "" {

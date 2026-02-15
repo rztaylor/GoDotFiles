@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add `gdf health validate`, `gdf health doctor`, `gdf health fix`, and `gdf health ci` for validation, diagnostics, safe repair, and CI health checks.
 - Add `gdf status diff` to show detailed drift findings for managed targets.
 - Add stable CLI exit codes for health and non-interactive failure paths to make scripting more reliable.
+- Add `gdf app remove --uninstall` cleanup flow with preview and guarded confirmation, including package uninstall only when uniquely owned by the removed app.
+- Add `gdf profile delete` mode flags (`--migrate-to-default`, `--purge`, `--leave-dangling`) with `--dry-run` impact previews.
 
 ### Changed
 - Reorganize app lifecycle commands under `gdf app` (`add`, `remove`, `list`, `install`, `track`, `move`, `library`) and recovery commands under `gdf recover` (`rollback`, `restore`), while keeping `init`, `save`, `push`, `pull`, and `sync` as top-level commands.
@@ -21,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add `--json` output for `gdf status`, `gdf status diff`, `gdf health validate`, `gdf health doctor`, and `gdf health ci`.
 - Add global `--yes` and `--non-interactive` flags for deterministic prompt handling in health and risky-apply flows.
 - Add `gdf apply --dry-run --json` plan output for automation workflows.
+- Expand prompt handling coverage so more interactive command paths follow deterministic `--non-interactive` and `--yes` behavior.
 
 ### Fixed
 - Require `gdf health` commands to run only inside an initialized `~/.gdf` repository, matching other repo-dependent commands.

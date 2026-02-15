@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -148,14 +146,7 @@ func rollbackSingleTarget(gdfDir, target string, choose bool) error {
 }
 
 func confirmRollbackPrompt(prompt string) (bool, error) {
-	fmt.Print(prompt)
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return false, err
-	}
-	v := strings.ToLower(strings.TrimSpace(input))
-	return v == "y" || v == "yes", nil
+	return confirmPromptUnsafe(prompt)
 }
 
 func chooseSnapshotCandidatePrompt(target string, candidates []engine.SnapshotCandidate) (*engine.SnapshotCandidate, error) {
@@ -163,9 +154,7 @@ func chooseSnapshotCandidatePrompt(target string, candidates []engine.SnapshotCa
 	for i, c := range candidates {
 		fmt.Printf("  %d) %s  %s\n", i+1, c.CapturedAt.Format("2006-01-02 15:04:05"), c.SnapshotPath)
 	}
-	fmt.Print("Select snapshot number: ")
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
+	input, err := readInteractiveLine("Select snapshot number: ")
 	if err != nil {
 		return nil, err
 	}

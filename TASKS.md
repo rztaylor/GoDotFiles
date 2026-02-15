@@ -18,25 +18,7 @@ For 1.0 prioritization:
 
 ## Priority 0: 1.0 Release Blockers (Must Ship Before Public 1.0)
 
-### 0.1 CLI and Automation Contract Stability
-- [ ] Expand `--non-interactive` and `--yes` prompt controls to all interactive command paths (for example `init`, `app add`, and `app install` prompts)
-- [ ] Add contract tests for prompt handling + exit codes across risky/apply/health/lifecycle flows
-- [ ] Define and document a 1.x CLI compatibility policy (deprecation windows for future renames/removals)
-
-### 0.2 Safe App Lifecycle Symmetry
-- [ ] Implement `Uninstall(pkg)` in `packages.Manager` interface
-- [ ] Implement `gdf app remove --uninstall` with explicit confirmation and preview
-- [ ] Implement `Unlink` in engine for clean symlink removal and rollback-safe behavior
-
-### 0.3 Safe Profile Deletion and Cleanup Controls
-- [ ] Add `--purge` to `gdf profile delete` for removing apps unique to that profile
-- [ ] Provide dry-run preview for profile deletion impact across apps/dotfiles/packages
-- [ ] Add explicit profile delete mode flags that remain stable for 1.x (avoid implicit behavior changes later)
-
-### 0.4 1.0 Schema and Workflow Stability
-- [ ] Freeze and document `v1` YAML behavior for core kinds (`Config`, `Profile`, `App`) and default conflict semantics
-- [ ] Add regression tests for core end-to-end workflows (`init` -> `app add/track` -> `apply` -> `status` -> `recover`)
-- [ ] Add a release checklist for 1.0 guarantees (safety, rollback, determinism, docs parity)
+No remaining pending tasks.
 
 ---
 

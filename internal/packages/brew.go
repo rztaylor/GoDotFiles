@@ -38,6 +38,26 @@ func (b *Brew) Install(pkg string) error {
 	return nil
 }
 
+// Uninstall removes a package using brew.
+func (b *Brew) Uninstall(pkg string) error {
+	if pkg == "" {
+		return fmt.Errorf("package name cannot be empty")
+	}
+
+	execCmd := b.execCommand
+	if execCmd == nil {
+		execCmd = exec.Command
+	}
+
+	cmd := execCmd("brew", "uninstall", pkg)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to uninstall %s via brew: %w\nOutput: %s", pkg, err, string(output))
+	}
+
+	return nil
+}
+
 // IsInstalled checks if a package is installed via brew.
 func (b *Brew) IsInstalled(pkg string) (bool, error) {
 	if pkg == "" {

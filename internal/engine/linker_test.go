@@ -217,6 +217,79 @@ func TestLinker_Unlink(t *testing.T) {
 	}
 }
 
+func TestLinker_UnlinkManaged(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	homeDir := filepath.Join(tmpDir, "home")
+	target := filepath.Join(homeDir, ".link")
+	source := filepath.Join(gdfDir, "dotfiles", "app", "config")
+
+	os.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(filepath.Join(gdfDir, "dotfiles", "app"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(source, []byte("config"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(source, target); err != nil {
+		t.Fatal(err)
+	}
+
+	l := NewLinker("error")
+	l.SetHistoryManager(NewHistoryManager(gdfDir, 512))
+
+	snap, err := l.UnlinkManaged(apps.Dotfile{
+		Source: "app/config",
+		Target: "~/.link",
+	}, gdfDir)
+	if err != nil {
+		t.Fatalf("UnlinkManaged() error = %v", err)
+	}
+	if snap == nil {
+		t.Fatal("expected rollback snapshot for managed symlink unlink")
+	}
+	if _, err := os.Lstat(target); !os.IsNotExist(err) {
+		t.Fatal("expected managed symlink to be removed")
+	}
+}
+
+func TestLinker_UnlinkManaged_SkipsUnmanagedSymlink(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	homeDir := filepath.Join(tmpDir, "home")
+	target := filepath.Join(homeDir, ".link")
+	otherSource := filepath.Join(tmpDir, "outside")
+
+	os.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(otherSource, []byte("outside"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(otherSource, target); err != nil {
+		t.Fatal(err)
+	}
+
+	l := NewLinker("error")
+	snap, err := l.UnlinkManaged(apps.Dotfile{
+		Source: "app/config",
+		Target: "~/.link",
+	}, gdfDir)
+	if err != nil {
+		t.Fatalf("UnlinkManaged() error = %v", err)
+	}
+	if snap != nil {
+		t.Fatal("expected no snapshot when unmanaged symlink is skipped")
+	}
+	if _, err := os.Lstat(target); err != nil {
+		t.Fatalf("expected unmanaged symlink to remain: %v", err)
+	}
+}
+
 func prettify(format string, args ...interface{}) error {
 	return filepath.ErrBadPattern // just a dummy error type for simplicity in test helper
 }

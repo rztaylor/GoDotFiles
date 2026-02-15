@@ -146,8 +146,9 @@ func TestInstall_WithProfileFlag(t *testing.T) {
 
 // MockPackageManager for testing
 type MockPackageManager struct {
-	mgrName   string
-	installed []string
+	mgrName     string
+	installed   []string
+	uninstalled []string
 }
 
 func (m *MockPackageManager) Name() string {
@@ -156,6 +157,11 @@ func (m *MockPackageManager) Name() string {
 
 func (m *MockPackageManager) Install(pkg string) error {
 	m.installed = append(m.installed, pkg)
+	return nil
+}
+
+func (m *MockPackageManager) Uninstall(pkg string) error {
+	m.uninstalled = append(m.uninstalled, pkg)
 	return nil
 }
 

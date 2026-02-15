@@ -45,6 +45,15 @@ func TestBrew_Install_Validation(t *testing.T) {
 	}
 }
 
+func TestBrew_Uninstall_Validation(t *testing.T) {
+	b := NewBrew()
+
+	err := b.Uninstall("")
+	if err == nil {
+		t.Error("Uninstall(\"\") should return error for empty package name")
+	}
+}
+
 func TestBrew_IsInstalled_Validation(t *testing.T) {
 	b := NewBrew()
 

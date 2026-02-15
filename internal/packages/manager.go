@@ -14,6 +14,9 @@ type Manager interface {
 	// Install installs a package.
 	Install(pkg string) error
 
+	// Uninstall removes a package.
+	Uninstall(pkg string) error
+
 	// IsInstalled checks if a package is installed.
 	IsInstalled(pkg string) (bool, error)
 
@@ -27,6 +30,11 @@ type NoOpManager struct{}
 
 // Install returns nil (no-op).
 func (m *NoOpManager) Install(pkg string) error {
+	return nil
+}
+
+// Uninstall returns nil (no-op).
+func (m *NoOpManager) Uninstall(pkg string) error {
 	return nil
 }
 

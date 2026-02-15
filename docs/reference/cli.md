@@ -37,8 +37,7 @@ Use a top-level command only when:
 
 ### Rename compatibility policy
 
-- Current policy for this rework: clean cutover with no compatibility aliases.
-- Future policy after external-user adoption: use temporary aliases + deprecation messaging before removals.
+- 1.x compatibility expectations are documented in [CLI Compatibility Policy](compatibility.md).
 
 ## Commands
 
@@ -81,6 +80,11 @@ Remove an app bundle from a profile.
 | Flag                      | Description                         |
 | ------------------------- | ----------------------------------- |
 | `-p, --profile <profile>` | Target profile (default: `default`) |
+| `--uninstall`             | Unlink managed dotfiles and uninstall package only when no profiles still reference the app |
+| `--dry-run`               | Preview removal actions without writing changes |
+| `--yes`                   | Skip uninstall/unlink confirmation prompt |
+
+When `--uninstall` is set, GDF prints a removal plan before applying changes.
 
 #### `gdf app list [flags]`
 
@@ -216,10 +220,24 @@ gdf profile show sre
 
 #### `gdf profile delete <name>`
 
-Delete a profile. If the profile contains apps, they are automatically moved to the `default` profile. The `default` profile cannot be deleted.
+Delete a profile. The `default` profile cannot be deleted.
+
+Delete mode flags (choose at most one):
+
+| Flag | Description |
+| ---- | ----------- |
+| `--migrate-to-default` | Move apps from the deleted profile into `default` |
+| `--purge` | Purge apps unique to the deleted profile (definition + managed cleanup) |
+| `--leave-dangling` | Delete the profile and leave app definitions unreferenced |
+| `--dry-run` | Preview profile deletion impact across apps, dotfiles, and packages without applying |
+| `--yes` | Skip purge confirmation prompt |
+
+If no mode flag is provided, behavior defaults to `--migrate-to-default`.
 
 ```bash
 gdf profile delete old-work
+gdf profile delete old-work --purge --dry-run
+gdf profile delete old-work --leave-dangling
 ```
 
 #### `gdf profile rename <old-name> <new-name>`

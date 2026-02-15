@@ -4,6 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/rztaylor/GoDotFiles/internal/apps"
+	"github.com/rztaylor/GoDotFiles/internal/config"
+	"github.com/rztaylor/GoDotFiles/internal/packages"
+	"github.com/rztaylor/GoDotFiles/internal/platform"
+	"github.com/rztaylor/GoDotFiles/internal/schema"
 )
 
 func TestAddApp(t *testing.T) {
@@ -80,6 +86,9 @@ func TestRemoveApp(t *testing.T) {
 
 	// Add app first
 	targetProfile = "default"
+	removeUninstall = false
+	removeYes = false
+	removeDryRun = false
 	if err := runAdd(nil, []string{"git"}); err != nil {
 		t.Fatalf("setup: runAdd() error = %v", err)
 	}
@@ -102,6 +111,225 @@ func TestRemoveApp(t *testing.T) {
 	// Remove non-existent app (should perform no-op)
 	if err := runRemove(nil, []string{"missing"}); err != nil {
 		t.Fatalf("runRemove() missing error = %v", err)
+	}
+}
+
+func TestRemoveAppWithUninstallUniquePackage(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	// App definition with package + managed dotfile.
+	bundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "tool",
+		Package: &apps.Package{
+			Apt: &apps.AptPackage{Name: "tool-pkg"},
+		},
+		Dotfiles: []apps.Dotfile{
+			{Source: "tool/config", Target: "~/.toolrc"},
+		},
+	}
+	if err := bundle.Save(filepath.Join(gdfDir, "apps", "tool.yaml")); err != nil {
+		t.Fatalf("saving bundle: %v", err)
+	}
+	sourcePath := filepath.Join(gdfDir, "dotfiles", "tool", "config")
+	if err := os.MkdirAll(filepath.Dir(sourcePath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sourcePath, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	targetPath := filepath.Join(homeDir, ".toolrc")
+	if err := os.Symlink(sourcePath, targetPath); err != nil {
+		t.Fatal(err)
+	}
+
+	targetProfile = "default"
+	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
+	profile, err := config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatalf("loading profile: %v", err)
+	}
+	profile.Apps = append(profile.Apps, "tool")
+	if err := profile.Save(profilePath); err != nil {
+		t.Fatalf("saving profile: %v", err)
+	}
+
+	mockMgr := &MockPackageManager{mgrName: "apt"}
+	oldOverride := packages.Override
+	oldPlatform := platform.Override
+	oldRemoveUninstall := removeUninstall
+	oldRemoveYes := removeYes
+	oldRemoveDryRun := removeDryRun
+	packages.Override = mockMgr
+	platform.Override = &platform.Platform{OS: "linux", Distro: "ubuntu", Home: homeDir}
+	removeUninstall = true
+	removeYes = true
+	removeDryRun = false
+	defer func() {
+		packages.Override = oldOverride
+		platform.Override = oldPlatform
+		removeUninstall = oldRemoveUninstall
+		removeYes = oldRemoveYes
+		removeDryRun = oldRemoveDryRun
+	}()
+
+	if err := runRemove(nil, []string{"tool"}); err != nil {
+		t.Fatalf("runRemove() error = %v", err)
+	}
+
+	profile, err = config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatalf("loading profile after remove: %v", err)
+	}
+	if contains(profile.Apps, "tool") {
+		t.Fatalf("app still present in profile after remove")
+	}
+	if len(mockMgr.uninstalled) != 1 || mockMgr.uninstalled[0] != "tool-pkg" {
+		t.Fatalf("unexpected uninstall calls: %#v", mockMgr.uninstalled)
+	}
+	if _, err := os.Lstat(targetPath); !os.IsNotExist(err) {
+		t.Fatalf("expected symlink to be removed, got err=%v", err)
+	}
+}
+
+func TestRemoveAppWithUninstallSkipsSharedPackage(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	writeBundle := func(name string) {
+		bundle := &apps.Bundle{
+			TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+			Name:     name,
+			Package:  &apps.Package{Apt: &apps.AptPackage{Name: "shared-pkg"}},
+		}
+		if err := bundle.Save(filepath.Join(gdfDir, "apps", name+".yaml")); err != nil {
+			t.Fatalf("saving bundle %s: %v", name, err)
+		}
+	}
+	writeBundle("tool-a")
+	writeBundle("tool-b")
+
+	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
+	profile, err := config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatalf("loading profile: %v", err)
+	}
+	profile.Apps = []string{"tool-a", "tool-b"}
+	if err := profile.Save(profilePath); err != nil {
+		t.Fatalf("saving profile: %v", err)
+	}
+
+	targetProfile = "default"
+	mockMgr := &MockPackageManager{mgrName: "apt"}
+	oldOverride := packages.Override
+	oldPlatform := platform.Override
+	oldRemoveUninstall := removeUninstall
+	oldRemoveYes := removeYes
+	oldRemoveDryRun := removeDryRun
+	packages.Override = mockMgr
+	platform.Override = &platform.Platform{OS: "linux", Distro: "ubuntu", Home: homeDir}
+	removeUninstall = true
+	removeYes = true
+	removeDryRun = false
+	defer func() {
+		packages.Override = oldOverride
+		platform.Override = oldPlatform
+		removeUninstall = oldRemoveUninstall
+		removeYes = oldRemoveYes
+		removeDryRun = oldRemoveDryRun
+	}()
+
+	if err := runRemove(nil, []string{"tool-a"}); err != nil {
+		t.Fatalf("runRemove() error = %v", err)
+	}
+	if len(mockMgr.uninstalled) != 0 {
+		t.Fatalf("expected no uninstall for shared package, got %#v", mockMgr.uninstalled)
+	}
+}
+
+func TestRemoveAppWithUninstallDryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	bundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "tool",
+		Package:  &apps.Package{Apt: &apps.AptPackage{Name: "tool-pkg"}},
+	}
+	if err := bundle.Save(filepath.Join(gdfDir, "apps", "tool.yaml")); err != nil {
+		t.Fatalf("saving bundle: %v", err)
+	}
+
+	targetProfile = "default"
+	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
+	profile, err := config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatalf("loading profile: %v", err)
+	}
+	profile.Apps = append(profile.Apps, "tool")
+	if err := profile.Save(profilePath); err != nil {
+		t.Fatalf("saving profile: %v", err)
+	}
+
+	mockMgr := &MockPackageManager{mgrName: "apt"}
+	oldOverride := packages.Override
+	oldPlatform := platform.Override
+	oldRemoveUninstall := removeUninstall
+	oldRemoveYes := removeYes
+	oldRemoveDryRun := removeDryRun
+	packages.Override = mockMgr
+	platform.Override = &platform.Platform{OS: "linux", Distro: "ubuntu", Home: homeDir}
+	removeUninstall = true
+	removeYes = true
+	removeDryRun = true
+	defer func() {
+		packages.Override = oldOverride
+		platform.Override = oldPlatform
+		removeUninstall = oldRemoveUninstall
+		removeYes = oldRemoveYes
+		removeDryRun = oldRemoveDryRun
+	}()
+
+	if err := runRemove(nil, []string{"tool"}); err != nil {
+		t.Fatalf("runRemove() error = %v", err)
+	}
+	profile, err = config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatalf("loading profile after dry-run: %v", err)
+	}
+	if !contains(profile.Apps, "tool") {
+		t.Fatal("dry-run should not remove app from profile")
+	}
+	if len(mockMgr.uninstalled) != 0 {
+		t.Fatalf("dry-run should not uninstall packages, got %#v", mockMgr.uninstalled)
 	}
 }
 

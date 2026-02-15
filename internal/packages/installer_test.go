@@ -13,7 +13,9 @@ type mockManager struct {
 	installed      bool
 	isInstalledErr error
 	installErr     error
+	uninstallErr   error
 	installCalls   int
+	uninstallCalls int
 }
 
 func (m *mockManager) Name() string {
@@ -23,6 +25,11 @@ func (m *mockManager) Name() string {
 func (m *mockManager) Install(pkg string) error {
 	m.installCalls++
 	return m.installErr
+}
+
+func (m *mockManager) Uninstall(pkg string) error {
+	m.uninstallCalls++
+	return m.uninstallErr
 }
 
 func (m *mockManager) IsInstalled(pkg string) (bool, error) {

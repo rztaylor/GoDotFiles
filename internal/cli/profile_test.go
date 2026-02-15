@@ -6,7 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
+	"github.com/rztaylor/GoDotFiles/internal/schema"
 )
 
 func TestProfileCreate(t *testing.T) {
@@ -401,6 +403,164 @@ func TestProfileDelete(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestProfileDeleteModeConflict(t *testing.T) {
+	oldPurge := profileDeletePurge
+	oldMigrate := profileDeleteMigrateToDefault
+	oldLeave := profileDeleteLeaveDangling
+	profileDeletePurge = true
+	profileDeleteMigrateToDefault = true
+	profileDeleteLeaveDangling = false
+	defer func() {
+		profileDeletePurge = oldPurge
+		profileDeleteMigrateToDefault = oldMigrate
+		profileDeleteLeaveDangling = oldLeave
+	}()
+
+	_, err := resolveProfileDeleteMode()
+	if err == nil {
+		t.Fatal("expected mode conflict error, got nil")
+	}
+}
+
+func TestProfileDeleteDryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	profileDir := filepath.Join(gdfDir, "profiles", "temp")
+	if err := os.MkdirAll(profileDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	profile := &config.Profile{Name: "temp", Apps: []string{"app1"}}
+	if err := profile.Save(filepath.Join(profileDir, "profile.yaml")); err != nil {
+		t.Fatal(err)
+	}
+
+	oldPurge := profileDeletePurge
+	oldMigrate := profileDeleteMigrateToDefault
+	oldLeave := profileDeleteLeaveDangling
+	oldDryRun := profileDeleteDryRun
+	oldYes := profileDeleteYes
+	profileDeletePurge = false
+	profileDeleteMigrateToDefault = true
+	profileDeleteLeaveDangling = false
+	profileDeleteDryRun = true
+	profileDeleteYes = true
+	defer func() {
+		profileDeletePurge = oldPurge
+		profileDeleteMigrateToDefault = oldMigrate
+		profileDeleteLeaveDangling = oldLeave
+		profileDeleteDryRun = oldDryRun
+		profileDeleteYes = oldYes
+	}()
+
+	if err := runProfileDelete(nil, []string{"temp"}); err != nil {
+		t.Fatalf("runProfileDelete() error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(profileDir, "profile.yaml")); err != nil {
+		t.Fatalf("dry-run should not delete profile: %v", err)
+	}
+}
+
+func TestProfileDeletePurgeRemovesUniqueApps(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+	t.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	// App unique to target profile.
+	uniqueBundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "unique-app",
+		Dotfiles: []apps.Dotfile{{Source: "unique-app/config", Target: "~/.unique-app"}},
+	}
+	if err := uniqueBundle.Save(filepath.Join(gdfDir, "apps", "unique-app.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	uniqueSource := filepath.Join(gdfDir, "dotfiles", "unique-app", "config")
+	if err := os.MkdirAll(filepath.Dir(uniqueSource), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(uniqueSource, []byte("cfg"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	uniqueTarget := filepath.Join(homeDir, ".unique-app")
+	if err := os.Symlink(uniqueSource, uniqueTarget); err != nil {
+		t.Fatal(err)
+	}
+
+	sharedBundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "shared-app",
+	}
+	if err := sharedBundle.Save(filepath.Join(gdfDir, "apps", "shared-app.yaml")); err != nil {
+		t.Fatal(err)
+	}
+
+	// target profile with both unique and shared app
+	targetDir := filepath.Join(gdfDir, "profiles", "to-delete")
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	targetProfile := &config.Profile{Name: "to-delete", Apps: []string{"unique-app", "shared-app"}}
+	if err := targetProfile.Save(filepath.Join(targetDir, "profile.yaml")); err != nil {
+		t.Fatal(err)
+	}
+
+	// another profile referencing shared-app only
+	otherDir := filepath.Join(gdfDir, "profiles", "other")
+	if err := os.MkdirAll(otherDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	otherProfile := &config.Profile{Name: "other", Apps: []string{"shared-app"}}
+	if err := otherProfile.Save(filepath.Join(otherDir, "profile.yaml")); err != nil {
+		t.Fatal(err)
+	}
+
+	oldPurge := profileDeletePurge
+	oldMigrate := profileDeleteMigrateToDefault
+	oldLeave := profileDeleteLeaveDangling
+	oldDryRun := profileDeleteDryRun
+	oldYes := profileDeleteYes
+	profileDeletePurge = true
+	profileDeleteMigrateToDefault = false
+	profileDeleteLeaveDangling = false
+	profileDeleteDryRun = false
+	profileDeleteYes = true
+	defer func() {
+		profileDeletePurge = oldPurge
+		profileDeleteMigrateToDefault = oldMigrate
+		profileDeleteLeaveDangling = oldLeave
+		profileDeleteDryRun = oldDryRun
+		profileDeleteYes = oldYes
+	}()
+
+	if err := runProfileDelete(nil, []string{"to-delete"}); err != nil {
+		t.Fatalf("runProfileDelete() error = %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(gdfDir, "apps", "unique-app.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("expected unique app definition to be purged")
+	}
+	if _, err := os.Stat(filepath.Join(gdfDir, "apps", "shared-app.yaml")); err != nil {
+		t.Fatalf("expected shared app definition to remain: %v", err)
+	}
+	if _, err := os.Lstat(uniqueTarget); !os.IsNotExist(err) {
+		t.Fatalf("expected unique managed symlink to be removed")
+	}
 }
 
 func TestProfileRename(t *testing.T) {

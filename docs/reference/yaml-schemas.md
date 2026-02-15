@@ -4,6 +4,20 @@ This document defines the YAML schemas for gdf configuration files.
 
 ---
 
+## v1 Stability Contract
+
+For the public `1.x` series, these schema guarantees are stable:
+- Core kinds remain `App/v1`, `Profile/v1`, and `Config/v1`.
+- Existing `v1` fields keep current meaning; new fields may be additive and optional only.
+- `conflict_resolution` defaults remain:
+  - `aliases: last_wins`
+  - `dotfiles: error`
+- Missing or invalid `kind` values continue to be rejected.
+
+Breaking reinterpretation of `v1` fields is deferred to a future major version.
+
+---
+
 ## App Bundle Schema (`apps/*.yaml`)
 
 ```yaml

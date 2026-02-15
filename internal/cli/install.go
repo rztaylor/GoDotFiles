@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -85,44 +84,59 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			defined = true
 			fmt.Printf("✓ Saved package instruction: %s: %s\n", pkgMgr.Name(), pkgName)
 		} else {
-			// Interactive Prompt
-			reader := bufio.NewReader(os.Stdin)
-			fmt.Printf("❓ How do you install '%s' on %s?\n", appName, plat.OS)
-			if pkgMgr.Name() != "none" {
-				fmt.Printf("   1. Package Manager (%s)\n", pkgMgr.Name())
-			}
-			fmt.Println("   2. Custom Script (Not implemented in MVP)")
-			fmt.Println("   3. Skip (Manual/External)")
-
-			fmt.Print("Select [1-3]: ")
-			choice, _ := reader.ReadString('\n')
-			choice = strings.TrimSpace(choice)
-
-			switch choice {
-			case "1":
+			if globalYes {
 				if pkgMgr.Name() == "none" {
-					fmt.Println("No package manager detected.")
+					return withExitCode(
+						fmt.Errorf("no package manager detected for '%s'; rerun interactively or provide --package", appName),
+						exitCodeNonInteractiveStop,
+					)
+				}
+				updateBundlePackage(bundle, pkgMgr.Name(), appName)
+				pkgName = appName
+				defined = true
+			} else {
+				// Interactive Prompt
+				fmt.Printf("❓ How do you install '%s' on %s?\n", appName, plat.OS)
+				if pkgMgr.Name() != "none" {
+					fmt.Printf("   1. Package Manager (%s)\n", pkgMgr.Name())
+				}
+				fmt.Println("   2. Custom Script (Not implemented in MVP)")
+				fmt.Println("   3. Skip (Manual/External)")
+
+				choice, err := readInteractiveLine("Select [1-3]: ")
+				if err != nil {
+					return err
+				}
+				choice = strings.TrimSpace(choice)
+
+				switch choice {
+				case "1":
+					if pkgMgr.Name() == "none" {
+						fmt.Println("No package manager detected.")
+						return nil
+					}
+					inputName, err := readInteractiveLine(fmt.Sprintf("Enter package name for %s (default: %s): ", pkgMgr.Name(), appName))
+					if err != nil {
+						return err
+					}
+					inputName = strings.TrimSpace(inputName)
+					if inputName == "" {
+						inputName = appName
+					}
+					updateBundlePackage(bundle, pkgMgr.Name(), inputName)
+					pkgName = inputName
+					defined = true
+
+				case "2":
+					fmt.Println("Custom script recording not yet implemented.")
+					return nil
+				case "3":
+					fmt.Println("Skipping installation learning.")
+					return nil
+				default:
+					fmt.Println("Invalid choice.")
 					return nil
 				}
-				fmt.Printf("Enter package name for %s (default: %s): ", pkgMgr.Name(), appName)
-				inputName, _ := reader.ReadString('\n')
-				inputName = strings.TrimSpace(inputName)
-				if inputName == "" {
-					inputName = appName
-				}
-				updateBundlePackage(bundle, pkgMgr.Name(), inputName)
-				pkgName = inputName
-				defined = true
-
-			case "2":
-				fmt.Println("Custom script recording not yet implemented.")
-				return nil
-			case "3":
-				fmt.Println("Skipping installation learning.")
-				return nil
-			default:
-				fmt.Println("Invalid choice.")
-				return nil
 			}
 		}
 
@@ -183,7 +197,6 @@ func ensureAppInProfile(gdfDir, appName, requestedProfile string, isNewApp bool)
 		choices = append(choices, p.Name)
 	}
 
-	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Select a profile to add it to:")
 	for i, name := range choices {
 		fmt.Printf("   %d. %s\n", i+1, name)
@@ -191,8 +204,10 @@ func ensureAppInProfile(gdfDir, appName, requestedProfile string, isNewApp bool)
 	fmt.Printf("   %d. Create new profile...\n", len(choices)+1)
 	fmt.Printf("   %d. Skip (leave orphaned)\n", len(choices)+2)
 
-	fmt.Print("Select: ")
-	input, _ := reader.ReadString('\n')
+	input, err := readInteractiveLine("Select: ")
+	if err != nil {
+		return err
+	}
 	input = strings.TrimSpace(input)
 
 	var selectedProfile string
@@ -202,14 +217,16 @@ func ensureAppInProfile(gdfDir, appName, requestedProfile string, isNewApp bool)
 	// Simplified: if input matches a number, map to choice.
 
 	var selection int
-	_, err := fmt.Sscanf(input, "%d", &selection)
+	_, err = fmt.Sscanf(input, "%d", &selection)
 	if err == nil {
 		if selection > 0 && selection <= len(choices) {
 			selectedProfile = choices[selection-1]
 		} else if selection == len(choices)+1 {
 			// Create new
-			fmt.Print("Enter name for new profile: ")
-			newName, _ := reader.ReadString('\n')
+			newName, err := readInteractiveLine("Enter name for new profile: ")
+			if err != nil {
+				return err
+			}
 			selectedProfile = strings.TrimSpace(newName)
 			if selectedProfile == "" {
 				return fmt.Errorf("profile name cannot be empty")

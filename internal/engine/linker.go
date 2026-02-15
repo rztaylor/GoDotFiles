@@ -101,22 +101,58 @@ func (l *Linker) Link(dotfile apps.Dotfile, gdfDir string) error {
 
 // Unlink removes the symlink for a dotfile.
 func (l *Linker) Unlink(dotfile apps.Dotfile) error {
+	_, err := l.UnlinkManaged(dotfile, "")
+	return err
+}
+
+// UnlinkManaged removes a managed symlink and returns a snapshot for rollback.
+// If gdfDir is provided, only symlinks pointing at the managed dotfile source are removed.
+func (l *Linker) UnlinkManaged(dotfile apps.Dotfile, gdfDir string) (*Snapshot, error) {
 	targetPath := platform.ExpandPath(dotfile.Target)
 
 	info, err := os.Lstat(targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // Already gone
+			return nil, nil // Already gone
 		}
-		return err
+		return nil, err
 	}
 
-	if info.Mode()&os.ModeSymlink != 0 {
-		return os.Remove(targetPath)
+	if info.Mode()&os.ModeSymlink == 0 {
+		// If it's not a symlink, we leave it alone (it might be a real file)
+		return nil, nil
 	}
 
-	// If it's not a symlink, we leave it alone (it might be a real file)
-	return nil
+	if gdfDir != "" && dotfile.Source != "" {
+		expectedSource := filepath.Join(gdfDir, "dotfiles", dotfile.Source)
+		actualSource, err := resolveSymlinkDestination(targetPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading symlink destination: %w", err)
+		}
+		if actualSource != expectedSource {
+			return nil, nil
+		}
+	}
+
+	snapshot, err := l.captureSnapshot(targetPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.Remove(targetPath); err != nil {
+		return nil, err
+	}
+	return snapshot, nil
+}
+
+func resolveSymlinkDestination(targetPath string) (string, error) {
+	dest, err := os.Readlink(targetPath)
+	if err != nil {
+		return "", err
+	}
+	if filepath.IsAbs(dest) {
+		return filepath.Clean(dest), nil
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(targetPath), dest)), nil
 }
 
 func (l *Linker) handleConflict(path string) (*Snapshot, error) {

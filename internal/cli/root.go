@@ -11,6 +11,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/git"
@@ -52,6 +53,10 @@ supporting composable profiles for different use cases (work, home, SRE, etc).`,
 }
 
 func runAutoUpdateCheck() error {
+	if globalNonInteractive || !hasInteractiveTerminal() {
+		return nil
+	}
+
 	cfgPath := platform.ConfigFile()
 
 	cfg, err := config.LoadConfig(cfgPath)
@@ -75,6 +80,18 @@ func runAutoUpdateCheck() error {
 	}
 
 	return nil
+}
+
+func hasInteractiveTerminal() bool {
+	in, err := os.Stdin.Stat()
+	if err != nil || in.Mode()&os.ModeCharDevice == 0 {
+		return false
+	}
+	out, err := os.Stdout.Stat()
+	if err != nil || out.Mode()&os.ModeCharDevice == 0 {
+		return false
+	}
+	return true
 }
 
 func shouldSkipInitCheck(cmd *cobra.Command) bool {

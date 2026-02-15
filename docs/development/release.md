@@ -31,6 +31,11 @@ This document outlines the steps to release a new version of GDF.
     -   Watch the "Release" workflow.
     -   Once completed, a new release will appear on the [Releases Page](https://github.com/rztaylor/GoDotFiles/releases).
 
+## 1.0 Gate
+
+Before the public `1.0.0` release, complete the dedicated checklist:
+- [1.0 Release Checklist](release-checklist-1.0.md)
+
 ## Automated Artifacts
 
 The GitHub Action uses [GoReleaser](https://goreleaser.com/) to automatically:

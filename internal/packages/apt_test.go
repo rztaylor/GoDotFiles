@@ -65,6 +65,15 @@ func TestApt_InstallWithRepo_Validation(t *testing.T) {
 	}
 }
 
+func TestApt_Uninstall_Validation(t *testing.T) {
+	a := NewApt()
+
+	err := a.Uninstall("")
+	if err == nil {
+		t.Error("Uninstall(\"\") should return error for empty package name")
+	}
+}
+
 func TestApt_IsInstalled_Validation(t *testing.T) {
 	a := NewApt()
 
