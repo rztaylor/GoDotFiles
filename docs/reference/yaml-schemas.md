@@ -111,8 +111,8 @@ shell:
     VAR_NAME: string      # Environment variable
     
   completions:
-    bash: string          # Command to generate bash completions
-    zsh: string           # Command to generate zsh completions
+    bash: string          # Command to generate bash completions (captured during gdf apply)
+    zsh: string           # Command to generate zsh completions (captured during gdf apply)
 
   init:
     - name: string        # Required: unique snippet id within this app

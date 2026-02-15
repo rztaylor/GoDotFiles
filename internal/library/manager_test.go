@@ -19,6 +19,7 @@ func TestList(t *testing.T) {
 		"git":             true,
 		"zsh":             true,
 		"starship":        true,
+		"gdf-shell":       true,
 		"curl":            true,
 		"jq":              true,
 		"mac-preferences": true,
@@ -47,6 +48,7 @@ func TestGet(t *testing.T) {
 	}{
 		{"git", false},
 		{"zsh", false},
+		{"gdf-shell", false},
 		{"nonexistent", true},
 	}
 
@@ -86,6 +88,38 @@ func TestAllRecipesValid(t *testing.T) {
 			}
 			if recipe.Kind != "Recipe/v1" {
 				t.Errorf("Recipe kind mismatch: got %q, want Recipe/v1", recipe.Kind)
+			}
+		})
+	}
+}
+
+func TestHighConfidenceCompletionRecipes(t *testing.T) {
+	m := New()
+
+	tests := []struct {
+		name    string
+		bashCmd string
+		zshCmd  string
+	}{
+		{name: "gh", bashCmd: "gh completion -s bash", zshCmd: "gh completion -s zsh"},
+		{name: "helm", bashCmd: "helm completion bash", zshCmd: "helm completion zsh"},
+		{name: "docker", bashCmd: "docker completion bash", zshCmd: "docker completion zsh"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recipe, err := m.Get(tt.name)
+			if err != nil {
+				t.Fatalf("Get(%q) error = %v", tt.name, err)
+			}
+			if recipe.Shell == nil || recipe.Shell.Completions == nil {
+				t.Fatalf("recipe %q missing shell completions", tt.name)
+			}
+			if recipe.Shell.Completions.Bash != tt.bashCmd {
+				t.Fatalf("recipe %q bash completion = %q, want %q", tt.name, recipe.Shell.Completions.Bash, tt.bashCmd)
+			}
+			if recipe.Shell.Completions.Zsh != tt.zshCmd {
+				t.Fatalf("recipe %q zsh completion = %q, want %q", tt.name, recipe.Shell.Completions.Zsh, tt.zshCmd)
 			}
 		})
 	}

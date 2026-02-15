@@ -12,4 +12,6 @@ shell:
     hi: helm install
     hu: helm upgrade
     hl: helm list
-
+  completions:
+    bash: helm completion bash
+    zsh: helm completion zsh

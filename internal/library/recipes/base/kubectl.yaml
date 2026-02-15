@@ -18,4 +18,6 @@ shell:
     kdp: kubectl describe pod
     kl: kubectl logs
     kaf: kubectl apply -f
-
+  completions:
+    bash: kubectl completion bash
+    zsh: kubectl completion zsh

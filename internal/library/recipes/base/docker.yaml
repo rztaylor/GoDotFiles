@@ -15,4 +15,6 @@ shell:
     dc: docker compose
     dps: docker ps
     di: docker images
-
+  completions:
+    bash: docker completion bash
+    zsh: docker completion zsh

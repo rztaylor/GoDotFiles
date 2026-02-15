@@ -47,6 +47,8 @@ Use a top-level command only when:
 
 Initialize gdf or clone existing dotfiles repository.
 
+`gdf init` also creates a placeholder `~/.gdf/generated/init.sh` so shell startup sourcing is safe before the first `gdf apply`.
+
 ```bash
 gdf init                              # Create new repo
 gdf init git@github.com:user/dots.git # Clone existing
@@ -326,11 +328,12 @@ This command performs the following operations:
 3. **Install packages** - Installs packages via package managers (when available)
 4. **Link dotfiles** - Creates symlinks with conflict resolution
 5. **Run apply hooks** - Executes hooks for package-less bundles
-6. **Generate shell integration** - Updates shell scripts for aliases/functions/env/init/completions
-7. **Security scan** - Detects high-risk hook/script commands and requests confirmation
-8. **Log operations** - Records all operations to `.operations/` for rollback
-9. **Capture history snapshots** - Saves pre-change file snapshots to `.history/` before destructive replacements
-10. **Update state** - Records applied profiles to `~/.gdf/state.yaml` (local only)
+6. **Generate shell integration** - Updates shell scripts for aliases/functions/env/init
+7. **Generate managed completion files** - Writes app completion artifacts to `~/.gdf/generated/completions/{bash,zsh}/`
+8. **Security scan** - Detects high-risk hook/script commands and requests confirmation
+9. **Log operations** - Records all operations to `.operations/` for rollback
+10. **Capture history snapshots** - Saves pre-change file snapshots to `.history/` before destructive replacements
+11. **Update state** - Records applied profiles to `~/.gdf/state.yaml` (local only)
 
 All operations are logged to `~/.gdf/.operations/<timestamp>.json`.
 Historical snapshots are stored in `~/.gdf/.history/` and retained with quota-based eviction.
@@ -348,6 +351,10 @@ gdf apply --dry-run work
 # Profile with dependencies will include them
 # If 'work' includes 'base', both are applied
 gdf apply work
+
+# Optional: add managed shell completion bootstrap from app library
+gdf app add gdf-shell -p base
+gdf apply base
 ```
 
 #### `gdf status`

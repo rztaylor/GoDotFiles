@@ -1,0 +1,20 @@
+kind: Recipe/v1
+name: gdf-shell
+description: GDF-managed shell bootstrap for centralized completion loading
+shell:
+  completions:
+    bash: gdf shell completion bash
+    zsh: gdf shell completion zsh
+  init:
+    - name: gdf-load-managed-completions
+      bash: |
+        for _gdf_comp in "$HOME/.gdf/generated/completions/bash/"*.sh; do
+          [ -f "$_gdf_comp" ] && source "$_gdf_comp"
+        done
+        unset _gdf_comp
+      zsh: |
+        setopt local_options null_glob
+        for _gdf_comp in "$HOME/.gdf/generated/completions/zsh/"*.sh; do
+          source "$_gdf_comp"
+        done
+        unset _gdf_comp

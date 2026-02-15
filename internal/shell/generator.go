@@ -17,6 +17,9 @@ type Generator struct{}
 type GenerateOptions struct {
 	// EnableAutoReload appends shell prompt hooks that re-source init.sh after updates.
 	EnableAutoReload bool
+	// DisableCompletionCommands skips inline completion command generation.
+	// This is used when completion artifacts are generated as managed files during apply.
+	DisableCompletionCommands bool
 }
 
 // NewGenerator creates a new shell generator.
@@ -70,11 +73,13 @@ func (g *Generator) GenerateWithOptions(bundles []*apps.Bundle, shellType ShellT
 		script.WriteString(initSnippets)
 	}
 
-	// Completions
-	completions := g.generateCompletions(bundles, shellType)
-	if completions != "" {
-		script.WriteString("\n# Completions\n")
-		script.WriteString(completions)
+	if !opts.DisableCompletionCommands {
+		// Completions
+		completions := g.generateCompletions(bundles, shellType)
+		if completions != "" {
+			script.WriteString("\n# Completions\n")
+			script.WriteString(completions)
+		}
 	}
 
 	if opts.EnableAutoReload {

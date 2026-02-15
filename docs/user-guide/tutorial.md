@@ -122,6 +122,8 @@ For your current terminal session:
 source ~/.gdf/generated/init.sh
 ```
 
+`gdf init` creates a placeholder `~/.gdf/generated/init.sh` so this command is safe immediately. Run `gdf apply` to generate the actual shell integration content.
+
 If you skipped the prompt (or auto-injection failed), add this to your shell RC (`~/.zshrc` or `~/.bashrc`) and reload:
 
 ```bash
@@ -138,6 +140,13 @@ gdf shell completion bash > ~/.local/share/bash-completion/completions/gdf
 # zsh
 mkdir -p ~/.zfunc
 gdf shell completion zsh > ~/.zfunc/_gdf
+```
+
+For profile-managed completion bootstrap (recommended for reproducibility), add the library pseudo-app and apply:
+
+```bash
+gdf app add gdf-shell -p base
+gdf apply base
 ```
 
 ### 4. Create a base profile

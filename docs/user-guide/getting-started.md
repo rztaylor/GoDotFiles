@@ -57,11 +57,20 @@ For the current terminal session, just load generated integration:
 source ~/.gdf/generated/init.sh
 ```
 
+`gdf init` creates a placeholder `~/.gdf/generated/init.sh` so this command is safe immediately. Run `gdf apply` to populate it with your shell integration.
+
 If you skipped the init prompt (or auto-injection failed), add this to your shell RC (`~/.zshrc` or `~/.bashrc`) and reload:
 
 ```bash
 [ -f ~/.gdf/generated/init.sh ] && source ~/.gdf/generated/init.sh
 source ~/.zshrc  # or ~/.bashrc
+```
+
+Optional (recommended for profile-managed completion across machines): add the library pseudo-app and apply once.
+
+```bash
+gdf app add gdf-shell -p base
+gdf apply base
 ```
 
 ## 4. Create a Base Profile

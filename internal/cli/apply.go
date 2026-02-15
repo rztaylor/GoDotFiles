@@ -3,7 +3,10 @@ package cli
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
@@ -130,7 +133,6 @@ func runApply(cmd *cobra.Command, args []string) error {
 
 	if len(appNames) == 0 {
 		fmt.Println("No apps to apply")
-		return nil
 	}
 
 	// Phase 3: Load all app bundles (recursively)
@@ -350,6 +352,17 @@ func runApply(cmd *cobra.Command, args []string) error {
 	// Generate to ~/.gdf/generated/init.sh
 	shellPath := filepath.Join(gdfDir, "generated", "init.sh")
 	if !applyDryRun {
+		compCount, compWarnings, err := generateManagedCompletionFiles(resolvedApps, gdfDir)
+		if err != nil {
+			return fmt.Errorf("generating managed shell completion files: %w", err)
+		}
+		if compCount > 0 {
+			fmt.Printf("   ✓ Managed shell completions updated (%d)\n", compCount)
+		}
+		for _, warning := range compWarnings {
+			fmt.Printf("   ⚠️  %s\n", warning)
+		}
+
 		// Load global (unassociated) aliases
 		ga, err := apps.LoadGlobalAliases(filepath.Join(gdfDir, "aliases.yaml"))
 		if err != nil {
@@ -358,7 +371,8 @@ func runApply(cmd *cobra.Command, args []string) error {
 		}
 
 		opts := shell.GenerateOptions{
-			EnableAutoReload: cfg.ShellIntegration.AutoReloadEnabledDefault(),
+			EnableAutoReload:          cfg.ShellIntegration.AutoReloadEnabledDefault(),
+			DisableCompletionCommands: true,
 		}
 		if err := shellGen.GenerateWithOptions(resolvedApps, shellType, shellPath, ga.Aliases, opts); err != nil {
 			return fmt.Errorf("generating shell integration: %w", err)
@@ -413,4 +427,98 @@ func defaultRiskConfirmationPrompt(findings []engine.RiskFinding) (bool, error) 
 	}
 
 	return confirmPrompt("\nProceed despite these high-risk commands? [y/N]: ")
+}
+
+func generateManagedCompletionFiles(bundles []*apps.Bundle, gdfDir string) (int, []string, error) {
+	baseDir := filepath.Join(gdfDir, "generated", "completions")
+	bashDir := filepath.Join(baseDir, "bash")
+	zshDir := filepath.Join(baseDir, "zsh")
+
+	for _, dir := range []string{bashDir, zshDir} {
+		if err := os.RemoveAll(dir); err != nil {
+			return 0, nil, fmt.Errorf("clearing completion dir %s: %w", dir, err)
+		}
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return 0, nil, fmt.Errorf("creating completion dir %s: %w", dir, err)
+		}
+	}
+
+	bundleMap := make(map[string]*apps.Bundle, len(bundles))
+	names := make([]string, 0, len(bundles))
+	for _, b := range bundles {
+		bundleMap[b.Name] = b
+		names = append(names, b.Name)
+	}
+	sort.Strings(names)
+
+	var count int
+	var warnings []string
+	for _, name := range names {
+		bundle := bundleMap[name]
+		if bundle.Shell == nil || bundle.Shell.Completions == nil {
+			continue
+		}
+
+		if cmd := strings.TrimSpace(bundle.Shell.Completions.Bash); cmd != "" {
+			output, err := runCompletionCommand(cmd)
+			if err != nil {
+				warnings = append(warnings, fmt.Sprintf("Skipping bash completion for app '%s': %v", bundle.Name, err))
+			} else {
+				path := filepath.Join(bashDir, completionFileName(bundle.Name))
+				if err := os.WriteFile(path, output, 0644); err != nil {
+					return 0, nil, fmt.Errorf("writing bash completion for app %s: %w", bundle.Name, err)
+				}
+				count++
+			}
+		}
+
+		if cmd := strings.TrimSpace(bundle.Shell.Completions.Zsh); cmd != "" {
+			output, err := runCompletionCommand(cmd)
+			if err != nil {
+				warnings = append(warnings, fmt.Sprintf("Skipping zsh completion for app '%s': %v", bundle.Name, err))
+			} else {
+				path := filepath.Join(zshDir, completionFileName(bundle.Name))
+				if err := os.WriteFile(path, output, 0644); err != nil {
+					return 0, nil, fmt.Errorf("writing zsh completion for app %s: %w", bundle.Name, err)
+				}
+				count++
+			}
+		}
+	}
+
+	return count, warnings, nil
+}
+
+func runCompletionCommand(command string) ([]byte, error) {
+	cmd := exec.Command("sh", "-c", command)
+	output, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return nil, fmt.Errorf("command failed (%s): %s", command, strings.TrimSpace(string(exitErr.Stderr)))
+		}
+		return nil, fmt.Errorf("running command (%s): %w", command, err)
+	}
+	if len(output) == 0 {
+		return nil, fmt.Errorf("command produced no output (%s)", command)
+	}
+	return output, nil
+}
+
+func completionFileName(appName string) string {
+	if appName == "" {
+		return "app.sh"
+	}
+	var b strings.Builder
+	for _, r := range appName {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			b.WriteRune(r)
+			continue
+		}
+		b.WriteRune('-')
+	}
+	name := b.String()
+	if name == "" {
+		name = "app"
+	}
+	return name + ".sh"
 }

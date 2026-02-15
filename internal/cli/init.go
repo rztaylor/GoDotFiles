@@ -209,6 +209,10 @@ func createNewRepo(gdfDir string) error {
 		return fmt.Errorf("creating initial commit: %w", err)
 	}
 
+	if err := ensureGeneratedInitScript(gdfDir); err != nil {
+		return err
+	}
+
 	fmt.Println("✓ Repository initialized")
 
 	// Offer to inject shell integration
@@ -236,6 +240,10 @@ func cloneRepo(url, gdfDir string) error {
 
 	fmt.Println("✓ Repository cloned")
 
+	if err := ensureGeneratedInitScript(gdfDir); err != nil {
+		return err
+	}
+
 	// Offer to inject shell integration
 	if err := offerShellInjection(); err != nil {
 		// Warn but don't fail
@@ -245,6 +253,30 @@ func cloneRepo(url, gdfDir string) error {
 
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Apply your profile: gdf apply")
+
+	return nil
+}
+
+func ensureGeneratedInitScript(gdfDir string) error {
+	generatedDir := filepath.Join(gdfDir, "generated")
+	if err := os.MkdirAll(generatedDir, 0755); err != nil {
+		return fmt.Errorf("creating generated directory: %w", err)
+	}
+
+	scriptPath := filepath.Join(generatedDir, "init.sh")
+	if _, err := os.Stat(scriptPath); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("checking generated init script: %w", err)
+	}
+
+	content := `#!/usr/bin/env sh
+# Placeholder created by gdf init.
+# Run 'gdf apply' to generate shell integration.
+`
+	if err := os.WriteFile(scriptPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("creating generated init script: %w", err)
+	}
 
 	return nil
 }

@@ -455,6 +455,36 @@ func TestGenerator_AutoReloadHooks(t *testing.T) {
 	}
 }
 
+func TestGenerator_DisableCompletionCommands(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "init.sh")
+
+	bundles := []*apps.Bundle{
+		{
+			Name: "kubectl",
+			Shell: &apps.Shell{
+				Completions: &apps.Completions{
+					Bash: "kubectl completion bash",
+				},
+			},
+		},
+	}
+
+	g := NewGenerator()
+	err := g.GenerateWithOptions(bundles, Bash, outputPath, nil, GenerateOptions{DisableCompletionCommands: true})
+	if err != nil {
+		t.Fatalf("GenerateWithOptions() error = %v", err)
+	}
+
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("reading generated file: %v", err)
+	}
+	if strings.Contains(string(content), "kubectl completion bash") {
+		t.Fatalf("expected completion command to be omitted when disabled:\n%s", string(content))
+	}
+}
+
 func TestGenerator_InitOrdering(t *testing.T) {
 	bundles := []*apps.Bundle{
 		{

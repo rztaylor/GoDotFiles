@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add `gdf app prune` to detect orphaned app definitions and archive them by default, with optional permanent delete mode.
 - Add optional patch-style output to `gdf status diff` with explicit `--max-files` and `--max-bytes` limits.
 - Add `gdf health fix --guarded` and `gdf health fix --dry-run` for previewable higher-impact remediations with backup-before-write behavior.
+- Add `gdf-shell` library pseudo-app and apply-time managed completion artifacts under `~/.gdf/generated/completions/{bash,zsh}` for profile-managed shell completion bootstrap.
 
 ### Changed
 - Add `--interactive` mode to `gdf app add` for recipe suggestions and dependency prompts.
@@ -37,10 +38,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add interactive strategy selection for `gdf profile delete` when no delete mode flag is provided.
 - Add orphan cleanup guidance after `gdf app remove` when an app is no longer referenced by any profile.
 - Improve `gdf status diff` responsiveness for repeated runs by caching drift preview metadata.
+- Update app `shell.completions` handling to generate managed completion files during `gdf apply` instead of embedding runtime completion commands in generated init scripts.
+- Expand library completion support by adding managed shell completion commands for `gh`, `helm`, and `docker` recipes.
 
 ### Fixed
 - Require `gdf health` commands to run only inside an initialized `~/.gdf` repository, matching other repo-dependent commands.
 - Ensure `gdf status` reports an initialization error when `~/.gdf` is not initialized.
+- Create a placeholder `~/.gdf/generated/init.sh` during `gdf init` so immediate `source ~/.gdf/generated/init.sh` no longer fails before first `gdf apply`.
 
 ## [0.8.0] - 2026-02-15
 

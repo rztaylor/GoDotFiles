@@ -149,6 +149,19 @@ shell:
 
 ---
 
+### 8. Managed Shell Completion Artifacts
+
+**Problem:** Runtime completion generation (`source <(command completion ...)`) depends on command availability and shell startup ordering on each prompt/session.
+
+**Decision:** Generate completion artifacts during `gdf apply` into `~/.gdf/generated/completions/{bash,zsh}/`, and source those files from managed init snippets.
+
+**Rationale:**
+- Keeps completion setup reproducible and profile-managed across machines.
+- Moves command execution to apply time instead of shell startup.
+- Enables pseudo-app bootstrap (`gdf-shell`) for centralized completion sourcing.
+
+---
+
 ## 🟡 App Bundles Without Packages
 
 **Insight:** An app bundle should NOT require a package installation.
@@ -215,6 +228,7 @@ This makes app bundles a flexible container for:
 | Package-less bundles | Supported | Enables mac-preferences use case |
 | Shell startup tasks | Generated in init.sh | Keep RC files clean and app-scoped |
 | CLI IA | Group domain commands, keep frequent workflows top-level | Reduce cognitive load and improve discoverability |
+| Shell completions | Generate managed files at apply-time | Reproducible completion setup with centralized sourcing |
 
 ---
 

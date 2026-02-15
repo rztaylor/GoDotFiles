@@ -15,4 +15,6 @@ shell:
     prl: gh pr list
     prc: gh pr checkout
     rv: gh repo view --web
-
+  completions:
+    bash: gh completion -s bash
+    zsh: gh completion -s zsh

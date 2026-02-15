@@ -53,6 +53,16 @@ func TestCreateNewRepo(t *testing.T) {
 	if _, err := os.Stat(profilePath); os.IsNotExist(err) {
 		t.Error("default profile was not created")
 	}
+
+	// Check generated init placeholder exists
+	generatedInitPath := filepath.Join(gdfDir, "generated", "init.sh")
+	content, err := os.ReadFile(generatedInitPath)
+	if err != nil {
+		t.Fatalf("reading generated init placeholder: %v", err)
+	}
+	if !containsString(string(content), "Placeholder created by gdf init.") {
+		t.Errorf("generated init placeholder content missing marker:\n%s", string(content))
+	}
 }
 
 func TestCreateGitignore(t *testing.T) {
@@ -102,6 +112,31 @@ func TestCreateDefaultProfile(t *testing.T) {
 
 	if !containsString(string(content), "name: default") {
 		t.Error("profile.yaml missing name field")
+	}
+}
+
+func TestEnsureGeneratedInitScript_Idempotent(t *testing.T) {
+	gdfDir := t.TempDir()
+	scriptPath := filepath.Join(gdfDir, "generated", "init.sh")
+
+	customContent := "# custom\n"
+	if err := os.MkdirAll(filepath.Dir(scriptPath), 0755); err != nil {
+		t.Fatalf("creating generated dir: %v", err)
+	}
+	if err := os.WriteFile(scriptPath, []byte(customContent), 0644); err != nil {
+		t.Fatalf("writing existing script: %v", err)
+	}
+
+	if err := ensureGeneratedInitScript(gdfDir); err != nil {
+		t.Fatalf("ensureGeneratedInitScript() error = %v", err)
+	}
+
+	got, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("reading script after ensure: %v", err)
+	}
+	if string(got) != customContent {
+		t.Fatalf("script content changed; got %q, want %q", string(got), customContent)
 	}
 }
 

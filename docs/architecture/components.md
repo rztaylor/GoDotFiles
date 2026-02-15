@@ -74,8 +74,16 @@ Generates shell integration:
 - Function definitions
 - Environment variables
 - Managed startup/init snippets from app definitions
-- Completions loading
+- Optional inline completion loading commands (legacy path)
 - Optional event-based auto-reload hook generation for bash/zsh
+
+### `internal/cli` (apply completion artifacts)
+
+`gdf apply` also generates managed shell completion artifacts from app `shell.completions` commands into:
+- `~/.gdf/generated/completions/bash/`
+- `~/.gdf/generated/completions/zsh/`
+
+These files can be sourced by startup snippets (for example, via the `gdf-shell` library pseudo-app) to provide profile-managed completion behavior across machines.
 
 ### `internal/platform`
 

@@ -187,3 +187,86 @@ func TestApplyRecursiveDependencies(t *testing.T) {
 		t.Errorf("wrong link destination for dependency: got %s, want %s", dest, depSourcePath)
 	}
 }
+
+func TestApplyGeneratesManagedCompletionFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+
+	os.Setenv("HOME", homeDir)
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo: %v", err)
+	}
+
+	appPath := filepath.Join(gdfDir, "apps", "compapp.yaml")
+	bundle := &apps.Bundle{
+		Name: "compapp",
+		Shell: &apps.Shell{
+			Completions: &apps.Completions{
+				Bash: `printf '# compapp bash completion\n'`,
+				Zsh:  `printf '# compapp zsh completion\n'`,
+			},
+		},
+	}
+	if err := bundle.Save(appPath); err != nil {
+		t.Fatal(err)
+	}
+
+	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
+	profile, err := config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile.Apps = []string{"compapp"}
+	if err := profile.Save(profilePath); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runApply(nil, []string{"default"}); err != nil {
+		t.Fatalf("runApply: %v", err)
+	}
+
+	bashCompPath := filepath.Join(gdfDir, "generated", "completions", "bash", "compapp.sh")
+	bashComp, err := os.ReadFile(bashCompPath)
+	if err != nil {
+		t.Fatalf("reading bash completion file: %v", err)
+	}
+	if !strings.Contains(string(bashComp), "compapp bash completion") {
+		t.Fatalf("bash completion missing expected output:\n%s", string(bashComp))
+	}
+
+	zshCompPath := filepath.Join(gdfDir, "generated", "completions", "zsh", "compapp.sh")
+	zshComp, err := os.ReadFile(zshCompPath)
+	if err != nil {
+		t.Fatalf("reading zsh completion file: %v", err)
+	}
+	if !strings.Contains(string(zshComp), "compapp zsh completion") {
+		t.Fatalf("zsh completion missing expected output:\n%s", string(zshComp))
+	}
+
+	// Remove app from profile and apply again: managed completion files should be refreshed away.
+	profile, err = config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile.Apps = nil
+	if err := profile.Save(profilePath); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runApply(nil, []string{"default"}); err != nil {
+		t.Fatalf("runApply after removing app: %v", err)
+	}
+
+	if _, err := os.Stat(bashCompPath); !os.IsNotExist(err) {
+		t.Fatalf("expected bash completion file to be removed, stat err=%v", err)
+	}
+	if _, err := os.Stat(zshCompPath); !os.IsNotExist(err) {
+		t.Fatalf("expected zsh completion file to be removed, stat err=%v", err)
+	}
+}
