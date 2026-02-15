@@ -158,7 +158,7 @@ func (i *Injector) RestoreSourceLine(aliasPath string, shellType ShellType) erro
 		// Case 1: Comment followed by source line
 		if trimmed == sourceLineComment {
 			if idx+1 < len(lines) && strings.Contains(lines[idx+1], oldIdentifier) {
-				newLines = append(newLines, "# Added by gdf restore")
+				newLines = append(newLines, "# Added by gdf recover restore")
 				newLines = append(newLines, newSourceLine)
 				skipNext = true
 				found = true
@@ -169,7 +169,7 @@ func (i *Injector) RestoreSourceLine(aliasPath string, shellType ShellType) erro
 		// Case 2: Source line without comment (or we missed the comment)
 		if strings.Contains(trimmed, oldIdentifier) && strings.Contains(trimmed, "source") {
 			if !found {
-				newLines = append(newLines, "# Added by gdf restore")
+				newLines = append(newLines, "# Added by gdf recover restore")
 				newLines = append(newLines, newSourceLine)
 				found = true
 			}
@@ -182,7 +182,7 @@ func (i *Injector) RestoreSourceLine(aliasPath string, shellType ShellType) erro
 	if !found {
 		// If GDF integration wasn't found, append the new alias loading
 		newLines = append(newLines, "")
-		newLines = append(newLines, "# Added by gdf restore")
+		newLines = append(newLines, "# Added by gdf recover restore")
 		newLines = append(newLines, newSourceLine)
 	}
 

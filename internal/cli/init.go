@@ -104,8 +104,8 @@ func createNewRepo(gdfDir string) error {
 	}
 
 	fmt.Println("\nNext steps:")
-	fmt.Println("  1. Add some apps:     gdf add kubectl")
-	fmt.Println("  2. Track dotfiles:    gdf track ~/.gitconfig")
+	fmt.Println("  1. Add some apps:     gdf app add kubectl")
+	fmt.Println("  2. Track dotfiles:    gdf app track ~/.gitconfig")
 	fmt.Println("  3. Set up a remote:   git -C ~/.gdf remote add origin <url>")
 
 	return nil

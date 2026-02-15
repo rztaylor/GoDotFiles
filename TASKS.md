@@ -5,24 +5,12 @@
 
 ---
 
-## Priority -1: CLI Cognitive Load Reduction (Absolute First)
-
-- [ ] Assess reworking existing command families to reduce cognitive load for users (audit top-level commands, grouping consistency, naming clarity, and discoverability gaps)
-
----
-
 ## Priority 0: Reliability, Safety, and Trust (Do First)
 
-### 0.0 CLI Information Architecture (Do Before New Commands)
-- [ ] Define command taxonomy for new features and avoid new top-level verbs by default
-- [ ] Document command grouping rules (when to add subcommands vs top-level commands)
-- [ ] Decide and document compatibility policy for future CLI renames (aliases/deprecations)
-
 ### 0.4 Deferred Follow-ups From Initial Priority 0 Scope
-- [ ] Define and implement a migration plan for reworking existing command families after the assessment (aliases, deprecation messaging, and removal timeline)
 - [ ] Expand `gdf status diff` with optional full patch-style diffs and clear performance limits
 - [ ] Expand `gdf health fix` beyond safe-only remediations with explicit guarded modes for higher-impact fixes (with previews and backups)
-- [ ] Expand `--non-interactive` and `--yes` prompt controls to all interactive command paths (for example `init`, `add`, and `install` prompts)
+- [ ] Expand `--non-interactive` and `--yes` prompt controls to all interactive command paths (for example `init`, `app add`, and `app install` prompts)
 - [ ] Improve drift/diff performance with incremental scanning or cached metadata to keep large repos responsive
 
 ---
@@ -31,7 +19,7 @@
 
 ### 1.1 Install/Uninstall Symmetry
 - [ ] Implement `Uninstall(pkg)` in `packages.Manager` interface
-- [ ] Implement `gdf remove --uninstall` with explicit confirmation and preview
+- [ ] Implement `gdf app remove --uninstall` with explicit confirmation and preview
 - [ ] Implement `Unlink` in engine for clean symlink removal and rollback-safe behavior
 
 ### 1.2 Orphan and Dangling State Management
@@ -58,8 +46,8 @@
 - [ ] Add secret-aware import flow (detect likely sensitive paths and require explicit handling choice)
 
 ### 2.3 Interactive Authoring
-- [ ] Add interactive mode to `gdf add` with recipe suggestions and dependency awareness
-- [ ] Add interactive mode to `gdf track` with target/path conflict previews
+- [ ] Add interactive mode to `gdf app add` with recipe suggestions and dependency awareness
+- [ ] Add interactive mode to `gdf app track` with target/path conflict previews
 
 ---
 

@@ -21,9 +21,15 @@ var addCmd = &cobra.Command{
 	Long: `Add an app bundle to a profile.
 
 If the app definition (apps/<app>.yaml) does not exist, it will be created.
-By default, the app is added to the 'default' profile. Use --to to specify a different profile.`,
+By default, the app is added to the 'default' profile. Use --profile to specify a different profile.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAdd,
+}
+
+var appCmd = &cobra.Command{
+	Use:   "app",
+	Short: "Manage app bundles and recipes",
+	Long:  `Manage app bundles and recipe-driven app workflows.`,
 }
 
 var removeCmd = &cobra.Command{
@@ -47,10 +53,11 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(addCmd)
-	rootCmd.AddCommand(removeCmd)
-	rootCmd.AddCommand(listCmd)
-	rootCmd.AddCommand(libraryCmd)
+	rootCmd.AddCommand(appCmd)
+	appCmd.AddCommand(addCmd)
+	appCmd.AddCommand(removeCmd)
+	appCmd.AddCommand(listCmd)
+	appCmd.AddCommand(libraryCmd)
 
 	addCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to add app to")
 	addCmd.Flags().BoolVar(&fromRecipe, "from-recipe", false, "Use library recipe without prompting")

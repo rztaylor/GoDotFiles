@@ -25,7 +25,7 @@ If your stack differs from the examples, reuse the same pattern with your own ap
 | Setup steps are tribal knowledge              | Setup is encoded in app/profile YAML                  |
 | Aliases/functions drift between machines      | Shell integration is generated from source of truth   |
 | New machine setup is manual and error-prone   | `gdf init` + `gdf apply` restores environment quickly |
-| Rollback is ad hoc                            | `gdf rollback` and history snapshots provide recovery |
+| Rollback is ad hoc                            | `gdf recover rollback` and history snapshots provide recovery |
 
 GDF is not only a symlink tool. It models your environment as **app bundles + profiles + Git sync**, so your setup becomes a maintainable system.
 
@@ -143,8 +143,8 @@ gdf profile create base --description "Essential tools for all machines"
 ### 5. Add one app and track one real dotfile
 
 ```bash
-gdf add git -p base
-gdf track ~/.gitconfig -a git
+gdf app add git -p base
+gdf app track ~/.gitconfig -a git
 ```
 
 What this does:
@@ -254,13 +254,13 @@ Now extend from one-app proof to a full environment.
 ```bash
 gdf profile create programming --description "Languages and developer tooling"
 
-gdf add go -p programming
-gdf add python -p programming
-gdf add make -p programming
-gdf add ripgrep -p programming
-gdf add fzf -p programming
+gdf app add go -p programming
+gdf app add python -p programming
+gdf app add make -p programming
+gdf app add ripgrep -p programming
+gdf app add fzf -p programming
 
-gdf track ~/.config/pip/pip.conf -a python
+gdf app track ~/.config/pip/pip.conf -a python
 
 gdf alias add gotest "go test ./..." -a go
 gdf alias add py python3 -a python
@@ -273,14 +273,14 @@ gdf alias add rg ripgrep -a ripgrep
 ```bash
 gdf profile create sre --description "SRE and cloud tooling"
 
-gdf add kubectl -p sre
-gdf add terraform -p sre
-gdf add docker -p sre
-gdf add aws-cli -p sre
-gdf add jq -p sre
+gdf app add kubectl -p sre
+gdf app add terraform -p sre
+gdf app add docker -p sre
+gdf app add aws-cli -p sre
+gdf app add jq -p sre
 
-gdf track ~/.kube/config -a kubectl
-gdf track ~/.aws/config -a aws-cli --secret
+gdf app track ~/.kube/config -a kubectl
+gdf app track ~/.aws/config -a aws-cli --secret
 
 gdf alias add k kubectl -a kubectl
 gdf alias add kgp "kubectl get pods" -a kubectl
@@ -360,7 +360,7 @@ Typical loop:
 
 ```bash
 # Add or change config
-gdf track ~/.tmux.conf -a tmux
+gdf app track ~/.tmux.conf -a tmux
 gdf alias add t "tmux attach || tmux"
 
 # Apply locally if needed
@@ -387,9 +387,9 @@ Use these consistently:
 - `gdf health doctor` to verify machine readiness
 - `gdf status` to verify applied state and drift summary
 - `gdf status diff` to inspect exact drift details
-- `gdf rollback` to undo last operation log
-- `gdf rollback --target ~/.zshrc --choose-snapshot` to restore one file from history
-- `gdf restore` if you need to replace managed symlinks with real files at original paths
+- `gdf recover rollback` to undo last operation log
+- `gdf recover rollback --target ~/.zshrc --choose-snapshot` to restore one file from history
+- `gdf recover restore` if you need to replace managed symlinks with real files at original paths
 
 ## Advanced: Edit App Bundles Directly
 
@@ -440,7 +440,7 @@ dependencies:
 Then add it to a profile:
 
 ```bash
-gdf add backend-dev -p programming
+gdf app add backend-dev -p programming
 ```
 
 GDF resolves dependencies during apply, so this works as a reusable grouped capability.
@@ -450,7 +450,7 @@ GDF resolves dependencies during apply, so this works as a reusable grouped capa
 When you want to install a tool immediately:
 
 ```bash
-gdf install ripgrep -p programming
+gdf app install ripgrep -p programming
 ```
 
 If package metadata is missing for your platform, GDF can prompt to learn installation details and persist them in the app definition.
@@ -465,7 +465,7 @@ If package metadata is missing for your platform, GDF can prompt to learn instal
 
 ## Next Steps
 
-- Explore built-in recipes: `gdf library list` and `gdf library describe <recipe>`
+- Explore built-in recipes: `gdf app library list` and `gdf app library describe <recipe>`
 - Learn full command behavior: [CLI Reference](../reference/cli.md)
 - Learn all YAML fields and conditions: [YAML Schema Reference](../reference/yaml-schemas.md)
 - Review design rationale: [Architecture Overview](../architecture/overview.md)

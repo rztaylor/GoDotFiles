@@ -30,7 +30,7 @@ var rollbackTarget string
 var rollbackConfirmPrompt = confirmRollbackPrompt
 
 func init() {
-	rootCmd.AddCommand(rollbackCmd)
+	recoverCmd.AddCommand(rollbackCmd)
 	rollbackCmd.Flags().BoolVar(&rollbackYes, "yes", false, "Skip confirmation prompt")
 	rollbackCmd.Flags().BoolVar(&rollbackChooseSnapshot, "choose-snapshot", false, "Prompt to choose snapshot versions when multiple exist")
 	rollbackCmd.Flags().StringVar(&rollbackTarget, "target", "", "Restore a specific target path from snapshot history")

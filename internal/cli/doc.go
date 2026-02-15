@@ -11,7 +11,8 @@
 // # Key Types
 //
 //   - rootCmd: The root Cobra command
-//   - Various sub-commands: init, add, track, apply, profile, alias, etc.
+//   - Grouped command families: app, profile, alias, health, shell, recover
+//   - High-frequency top-level workflows: init, apply, status, save/pull/push/sync
 //
 // # Dependencies
 //

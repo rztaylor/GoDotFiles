@@ -3,10 +3,10 @@
 //
 // Key commands:
 //   - gdf init: Initialize or clone a dotfiles repository
-//   - gdf add: Add an app bundle to a profile
-//   - gdf track: Track existing dotfiles
+//   - gdf app add: Add an app bundle to a profile
+//   - gdf app track: Track existing dotfiles
 //   - gdf apply: Apply profiles to the system
-//   - gdf sync: Pull, apply, and push changes
+//   - gdf sync: Pull, commit, and push repository changes
 package cli
 
 import (

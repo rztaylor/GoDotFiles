@@ -46,7 +46,7 @@ conflict_resolution:
 ```
 
 **Commands:**
-- `gdf rollback` - Undo last operation
+- `gdf recover rollback` - Undo last operation
 - `gdf apply --dry-run` - Preview changes (MVP)
 
 ---
@@ -129,6 +129,26 @@ shell:
 
 ---
 
+### 7. CLI Information Architecture
+
+**Problem:** Too many top-level verbs increase cognitive load and make command discovery inconsistent.
+
+**Decision:** Group domain-specific workflows under command families and keep only high-frequency entry points top-level.
+
+**Top-level commands kept for frequency/discoverability:**
+- `gdf init`, `gdf apply`, `gdf status`
+- `gdf save`, `gdf push`, `gdf pull`, `gdf sync`
+
+**Grouped command families:**
+- `gdf app ...` for app lifecycle and library workflows (`add`, `remove`, `list`, `install`, `track`, `move`, `library`)
+- `gdf recover ...` for rollback/restore workflows (`rollback`, `restore`)
+
+**Compatibility policy for this change:**
+- Clean cutover with no aliases/deprecation window (pre-live-user phase).
+- For future public-facing renames, require temporary aliases + explicit deprecation messaging before removal.
+
+---
+
 ## 🟡 App Bundles Without Packages
 
 **Insight:** An app bundle should NOT require a package installation.
@@ -194,6 +214,7 @@ This makes app bundles a flexible container for:
 | Secrets | Flag + gitignore (Phase 1) | Encryption deferred |
 | Package-less bundles | Supported | Enables mac-preferences use case |
 | Shell startup tasks | Generated in init.sh | Keep RC files clean and app-scoped |
+| CLI IA | Group domain commands, keep frequent workflows top-level | Reduce cognitive load and improve discoverability |
 
 ---
 

@@ -26,7 +26,7 @@ This command prepares your system for GDF removal.`,
 var aliasesFile string
 
 func init() {
-	rootCmd.AddCommand(restoreCmd)
+	recoverCmd.AddCommand(restoreCmd)
 	// Default to ~/.aliases (expanded later)
 	restoreCmd.Flags().StringVar(&aliasesFile, "aliases-file", "~/.aliases", "Path to export aliases to")
 }

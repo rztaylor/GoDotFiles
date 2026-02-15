@@ -128,7 +128,7 @@ Recipes in `internal/library/` should:
 Use conventional commits:
 
 ```
-feat(cli): add gdf track command
+feat(cli): add gdf app track command
 fix(packages): handle brew cask packages correctly
 docs(readme): update installation instructions
 test(apps): add tests for bundle loading
@@ -188,4 +188,3 @@ The `make release` command includes checks to prevent accidental releases (e.g.,
 1. **Keep architecture current** - Update when design changes
 2. **Mark phase progress** - Check off completed phases
 3. **Add new decisions** - Document significant choices
-

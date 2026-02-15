@@ -48,13 +48,13 @@ gdf init
 gdf apply base programming
 
 # Track existing config
-gdf track ~/.gitconfig -a git
+gdf app track ~/.gitconfig -a git
 
 # Add alias (auto-associates with app)
 gdf alias add k kubectl
 
 # Roll back latest apply if needed
-gdf rollback
+gdf recover rollback
 
 # Save and sync
 gdf save "Added kubectl alias"

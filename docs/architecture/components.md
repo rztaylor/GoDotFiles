@@ -28,7 +28,7 @@ Implements all CLI commands using Cobra. Each command file handles:
 - Argument parsing
 - Flag handling
 - Calling engine functions
-- Calling engine functions
+- Command-family grouping (for example `app` and `recover` namespaces)
 - Formatting output (see [UI Style Guide](../reference/ui-style-guide.md))
 
 ### `internal/config`

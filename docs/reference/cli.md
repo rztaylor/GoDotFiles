@@ -14,6 +14,32 @@ Complete reference for all gdf commands.
 | `--non-interactive` | Disable supported prompts and fail when confirmation is required |
 | `-h, --help`    | Show help for any command |
 
+## CLI Information Architecture
+
+### Command taxonomy
+
+- Keep high-frequency workflows as top-level commands: `init`, `apply`, `status`, `save`, `push`, `pull`, `sync`.
+- Group domain-specific lifecycle operations under command families:
+  - `gdf app ...` for app bundle and recipe workflows
+  - `gdf recover ...` for rollback and restore workflows
+  - existing grouped families remain: `profile`, `alias`, `health`, `shell`
+
+### Grouping rules
+
+Use a grouped subcommand (default) when:
+- the action belongs to a clear domain (`app`, `profile`, `recover`, etc.)
+- the action is one of several related lifecycle verbs
+- grouping improves discoverability in `gdf <domain> --help`
+
+Use a top-level command only when:
+- it is a high-frequency workflow entry point across domains
+- grouping would make first-run or daily usage less discoverable
+
+### Rename compatibility policy
+
+- Current policy for this rework: clean cutover with no compatibility aliases.
+- Future policy after external-user adoption: use temporary aliases + deprecation messaging before removals.
+
 ## Commands
 
 ### Initialization
@@ -31,7 +57,7 @@ gdf init git@github.com:user/dots.git # Clone existing
 
 ### App Management
 
-#### `gdf add <app> [flags]`
+#### `gdf app add <app> [flags]`
 
 Add an app bundle to a profile.
 
@@ -41,14 +67,14 @@ Add an app bundle to a profile.
 | `--with <companions>`     | Include companion apps              |
 | `--track <path>`          | Track config file                   |
 | `--aliases`               | Include suggested aliases           |
-| `--from-library`          | Use built-in recipe                 |
+| `--from-recipe`           | Use built-in recipe                 |
 
 ```bash
-gdf add kubectl -p sre
-gdf add kubectl --with kubectx,kubens --aliases
+gdf app add kubectl -p sre
+gdf app add kubectl --with kubectx,kubens --aliases
 ```
 
-#### `gdf remove <app> [flags]`
+#### `gdf app remove <app> [flags]`
 
 Remove an app bundle from a profile.
 
@@ -56,7 +82,7 @@ Remove an app bundle from a profile.
 | ------------------------- | ----------------------------------- |
 | `-p, --profile <profile>` | Target profile (default: `default`) |
 
-#### `gdf list [flags]`
+#### `gdf app list [flags]`
 
 List apps in a profile.
 
@@ -64,23 +90,23 @@ List apps in a profile.
 | ------------------------- | ---------------------------------------------- |
 | `-p, --profile <profile>` | Profile to list apps from (default: `default`) |
  
-#### `gdf library`
+#### `gdf app library`
 
 Manage and explore the built-in app library.
 
-##### `gdf library list`
+##### `gdf app library list`
 
 List all available recipes in the embedded library.
 
-##### `gdf library describe <recipe>`
+##### `gdf app library describe <recipe>`
 
 Show the YAML definition and details of a specific recipe.
 
 ```bash
-gdf library describe git
+gdf app library describe git
 ```
 
-#### `gdf move <app-pattern> [flags]`
+#### `gdf app move <app-pattern> [flags]`
  
 Move apps between profiles. At least one of `--from` or `--to` must be specified. If one is omitted, it defaults to `default`.
  
@@ -92,12 +118,12 @@ Supports wildcard patterns (e.g. `gnome-*`, `*`).
 | `--to <profile>`   | Target profile (default: `default`) |
  
 ```bash
-gdf move git -p work --to home
-gdf move "gnome-*" --to desktop
-gdf move --from old-work --to work # Move all apps
+gdf app move git --from work --to home
+gdf app move "gnome-*" --to desktop
+gdf app move --from old-work --to work # Move all apps
 ```
 
-#### `gdf install <app> [flags]`
+#### `gdf app install <app> [flags]`
 
 Install an app directly. if the app is not defined or the installation method is unknown for the current OS, it will prompt to learn the package details.
 
@@ -109,11 +135,11 @@ If the app is not part of any profile, it will be added to the `default` profile
 | `-p, --profile <profile>` | Profile to add app to (default: `default`) |
 
 ```bash
-gdf install ripgrep
-gdf install ripgrep --package ripgrep-cli
+gdf app install ripgrep
+gdf app install ripgrep --package ripgrep-cli
 ```
 
-#### `gdf track <path> [flags]`
+#### `gdf app track <path> [flags]`
 
 Track existing dotfile and associate with an app.
 
@@ -123,9 +149,9 @@ Track existing dotfile and associate with an app.
 | `--secret`        | Mark file as secret (add to .gitignore) |
 
 ```bash
-gdf track ~/.kube/config -a kubectl
-gdf track ~/.gitconfig -a git
-gdf track ~/.aws/config -a aws-cli --secret
+gdf app track ~/.kube/config -a kubectl
+gdf app track ~/.gitconfig -a git
+gdf app track ~/.aws/config -a aws-cli --secret
 ```
 
 ---
@@ -206,7 +232,7 @@ gdf profile rename work work-2024
 
 ---
 
-### Apply & Sync
+### Apply & Status
 
 #### `gdf apply <profiles...>`
 
@@ -247,24 +273,6 @@ gdf apply --dry-run work
 # Profile with dependencies will include them
 # If 'work' includes 'base', both are applied
 gdf apply work
-```
-
-#### `gdf rollback`
-
-Undo the most recent operation log and restore captured historical snapshots when available.
-
-| Flag | Description |
-| ---- | ----------- |
-| `--yes` | Skip confirmation prompt |
-| `--choose-snapshot` | Prompt for a snapshot choice when multiple historical versions exist |
-| `--target <path>` | Restore a specific target path from snapshot history |
-
-```bash
-# Rollback latest apply operations
-gdf rollback
-
-# Restore one file from historical snapshots
-gdf rollback --target ~/.zshrc --choose-snapshot
 ```
 
 #### `gdf status`
@@ -317,6 +325,40 @@ Last applied: 2024-02-11 18:30:00
 - State is LOCAL ONLY (gitignored) and does not sync across machines
 - Updated automatically when `gdf apply` succeeds
 
+---
+
+### Recovery
+
+#### `gdf recover rollback`
+
+Undo the most recent operation log and restore captured historical snapshots when available.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--yes` | Skip confirmation prompt |
+| `--choose-snapshot` | Prompt for a snapshot choice when multiple historical versions exist |
+| `--target <path>` | Restore a specific target path from snapshot history |
+
+```bash
+# Rollback latest apply operations
+gdf recover rollback
+
+# Restore one file from historical snapshots
+gdf recover rollback --target ~/.zshrc --choose-snapshot
+```
+
+#### `gdf recover restore [flags]`
+
+Restore tracked files to their original locations and replace managed symlinks with real files.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--aliases-file <path>` | Path to export aliases to (default: `~/.aliases`) |
+
+```bash
+gdf recover restore
+gdf recover restore --aliases-file ~/.aliases
+```
 
 ---
 
@@ -405,8 +447,8 @@ This is the recommended workflow for keeping multiple machines in sync.
 **Example Workflow:**
 ```bash
 # On machine 1: Make changes and sync
-gdf add kubectl
-gdf track ~/.kube/config
+gdf app add kubectl
+gdf app track ~/.kube/config
 gdf sync
 
 # On machine 2: Pull changes

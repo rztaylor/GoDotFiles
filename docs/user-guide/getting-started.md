@@ -69,8 +69,8 @@ gdf profile create base --description "Essential tools for every machine"
 Create the app bundle, then track your config:
 
 ```bash
-gdf add git -p base
-gdf track ~/.gitconfig -a git
+gdf app add git -p base
+gdf app track ~/.gitconfig -a git
 ```
 
 This moves your managed copy into `~/.gdf/dotfiles/git/.gitconfig` and symlinks `~/.gitconfig` to it.
@@ -124,13 +124,13 @@ gdf push
 If something goes wrong:
 
 ```bash
-gdf rollback
+gdf recover rollback
 ```
 
 To restore managed files back to regular files at original locations:
 
 ```bash
-gdf restore
+gdf recover restore
 ```
 
 To validate configuration and run a safe auto-repair pass:

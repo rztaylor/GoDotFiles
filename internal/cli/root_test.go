@@ -91,3 +91,50 @@ func TestPersistentPreRunE_UninitializedMessage(t *testing.T) {
 		t.Fatalf("unexpected init error message: %q", got)
 	}
 }
+
+func TestCommandHierarchy_GroupsAppAndRecover(t *testing.T) {
+	for _, name := range []string{"init", "save", "push", "pull", "sync"} {
+		if findSubcommand(rootCmd, name) == nil {
+			t.Fatalf("expected top-level '%s' command", name)
+		}
+	}
+
+	app := findSubcommand(rootCmd, "app")
+	if app == nil {
+		t.Fatal("expected top-level 'app' command")
+	}
+
+	recoverCmd := findSubcommand(rootCmd, "recover")
+	if recoverCmd == nil {
+		t.Fatal("expected top-level 'recover' command")
+	}
+
+	for _, name := range []string{"add", "remove", "list", "install", "track", "move", "library"} {
+		if findSubcommand(app, name) == nil {
+			t.Fatalf("expected 'gdf app %s' command", name)
+		}
+	}
+
+	for _, name := range []string{"rollback", "restore"} {
+		if findSubcommand(recoverCmd, name) == nil {
+			t.Fatalf("expected 'gdf recover %s' command", name)
+		}
+	}
+}
+
+func TestCommandHierarchy_RemovesOldTopLevelCommands(t *testing.T) {
+	for _, name := range []string{"add", "remove", "list", "install", "track", "move", "library", "rollback", "restore"} {
+		if findSubcommand(rootCmd, name) != nil {
+			t.Fatalf("did not expect top-level '%s' command after regrouping", name)
+		}
+	}
+}
+
+func findSubcommand(cmd *cobra.Command, name string) *cobra.Command {
+	for _, c := range cmd.Commands() {
+		if c.Name() == name {
+			return c
+		}
+	}
+	return nil
+}

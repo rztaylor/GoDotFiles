@@ -27,7 +27,7 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(moveCmd)
+	appCmd.AddCommand(moveCmd)
 	moveCmd.Flags().StringVar(&moveFromProfile, "from", "", "Source profile")
 	moveCmd.Flags().StringVar(&moveToProfile, "to", "", "Target profile")
 }

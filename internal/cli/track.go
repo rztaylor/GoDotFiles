@@ -25,7 +25,7 @@ var targetApp string
 var secretFlag bool
 
 func init() {
-	rootCmd.AddCommand(trackCmd)
+	appCmd.AddCommand(trackCmd)
 	trackCmd.Flags().StringVarP(&targetApp, "app", "a", "", "App bundle to add this file to")
 	trackCmd.Flags().BoolVar(&secretFlag, "secret", false, "Mark file as secret (add to .gitignore)")
 }

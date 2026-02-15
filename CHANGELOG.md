@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add stable CLI exit codes for health and non-interactive failure paths to make scripting more reliable.
 
 ### Changed
+- Reorganize app lifecycle commands under `gdf app` (`add`, `remove`, `list`, `install`, `track`, `move`, `library`) and recovery commands under `gdf recover` (`rollback`, `restore`), while keeping `init`, `save`, `push`, `pull`, and `sync` as top-level commands.
 - Improve the getting started guide with a clearer quickstart flow and valid follow-up documentation links.
 - Update `gdf init` shell onboarding to ask whether to enable event-based auto-reload (default yes) for faster out-of-the-box shell updates.
 - Update `gdf init` onboarding to offer shell completion installation for the detected shell by default, with manual commands as fallback.
@@ -29,8 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 - **Safer Apply for Risky Scripts**: `gdf apply` now warns and asks for confirmation when app hooks or install scripts look high risk (for example remote script pipe-to-shell patterns).
-- **Rollback Command**: Added `gdf rollback` so you can undo the latest apply changes and recover files from captured history.
-- **Targeted File Recovery**: `gdf rollback --target <path> --choose-snapshot` lets you restore a specific file and choose from dated historical versions.
+- **Rollback Command**: Added `gdf recover rollback` so you can undo the latest apply changes and recover files from captured history.
+- **Targeted File Recovery**: `gdf recover rollback --target <path> --choose-snapshot` lets you restore a specific file and choose from dated historical versions.
 - **More Flexible Conditional Dotfiles**: Dotfile conditions now support boolean expressions (`AND`/`OR`) and parentheses.
 - **Better Cross-Platform Dotfile Targets**: Dotfiles can now cleanly map different target paths per OS from a single app definition.
 
@@ -46,9 +47,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - **App Library**: Expanded core library with 30+ new app recipes (Languages, DevOps, Utilities) including "Base Profile" tools like git, zsh, starship.
-- **Library CLI**: New `gdf library list` and `describe` commands to explore embedded recipes.
-- **Interactive Add**: `gdf add` now prompts to use recipes if available, or to confirm skeleton creation for new apps.
-- **No-Override Safety**: `gdf add` explicitly warns and preserves existing app configurations instead of overriding them.
+- **Library CLI**: New `gdf app library list` and `describe` commands to explore embedded recipes.
+- **Interactive Add**: `gdf app add` now prompts to use recipes if available, or to confirm skeleton creation for new apps.
+- **No-Override Safety**: `gdf app add` explicitly warns and preserves existing app configurations instead of overriding them.
 - **Meta-Profiles**: Support for grouping tools via meta-apps (e.g., `backend-dev`).
 - **Recursive Dependencies**: `gdf apply` now recursively installs dependencies for apps in profiles.
 - **Self-Update**: Implemented `gdf update` command and periodic auto-update checks.
@@ -64,7 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - **Schema Versioning**: Enforced `kind` field (e.g., `App/v1`) in all YAML files to support future schema evolution.
-- **Restore Command**: Added `gdf restore` to revert changes, restore files, and export aliases for safe uninstallation.
+- **Restore Command**: Added `gdf recover restore` to revert changes, restore files, and export aliases for safe uninstallation.
 - **Version Command**: Added `gdf version` to output build information.
 - **License**: Switched to Apache 2.0 License.
 - **Docs**: Cleaned up broken links in documentation.
@@ -79,10 +80,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Core Features**
   - `gdf init` to initialize or clone dotfiles repositories (supports existing repos).
-  - `gdf add <app>` to add app bundles to profiles.
-  - `gdf track <path>` to adopt existing dotfiles into the repo.
+  - `gdf app add <app>` to add app bundles to profiles.
+  - `gdf app track <path>` to adopt existing dotfiles into the repo.
   - `gdf apply` to link dotfiles and install packages from profiles.
-  - `gdf list`, `gdf remove`, and `gdf show` for managing apps and profiles.
+  - `gdf app list`, `gdf app remove`, and `gdf show` for managing apps and profiles.
   - **Auto-detection** of app names when tracking files (e.g. `.gitconfig` -> `git`).
 
 - **Profile Management**
@@ -105,7 +106,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - **Status**: `gdf status` to see what is applied and when.
 
 - **Safety & Security**
-  - **Secret Tracking**: `gdf track --secret` to safely add sensitive files to `.gitignore`.
+  - **Secret Tracking**: `gdf app track --secret` to safely add sensitive files to `.gitignore`.
   - **Backups**: Automatic backups of existing files during `apply`.
   - **Conflict Resolution**: Strategies for handling file conflicts (`backup_and_replace`, `error`).
 

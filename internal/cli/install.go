@@ -31,7 +31,7 @@ var installPackage string
 var installProfile string
 
 func init() {
-	rootCmd.AddCommand(installCmd)
+	appCmd.AddCommand(installCmd)
 	installCmd.Flags().StringVar(&installPackage, "package", "", "Specify package name manually")
 	installCmd.Flags().StringVar(&installScript, "script", "", "Specify custom install script manually")
 	installCmd.Flags().StringVarP(&installProfile, "profile", "p", "default", "Profile to add app to")
