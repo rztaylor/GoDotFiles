@@ -14,6 +14,10 @@ type Shell struct {
 
 	// Completions defines shell completion generation commands.
 	Completions *Completions `yaml:"completions,omitempty"`
+
+	// Init defines startup snippets to include in generated shell init script.
+	// Snippets are emitted in list order for deterministic startup behavior.
+	Init []InitSnippet `yaml:"init,omitempty"`
 }
 
 // Completions defines commands to generate shell completions.
@@ -23,4 +27,22 @@ type Completions struct {
 
 	// Zsh is the command to generate zsh completions.
 	Zsh string `yaml:"zsh,omitempty"`
+}
+
+// InitSnippet defines a shell startup snippet for an app.
+type InitSnippet struct {
+	// Name uniquely identifies the snippet within an app.
+	Name string `yaml:"name"`
+
+	// Common is the default snippet for all shells.
+	Common string `yaml:"common,omitempty"`
+
+	// Bash overrides Common for bash shells when set.
+	Bash string `yaml:"bash,omitempty"`
+
+	// Zsh overrides Common for zsh shells when set.
+	Zsh string `yaml:"zsh,omitempty"`
+
+	// Guard is an optional shell condition checked before executing the snippet.
+	Guard string `yaml:"guard,omitempty"`
 }

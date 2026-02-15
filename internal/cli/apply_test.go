@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
@@ -45,6 +46,14 @@ func TestApply(t *testing.T) {
 				Target: "~/.config/testapp",
 			},
 		},
+		Shell: &apps.Shell{
+			Init: []apps.InitSnippet{
+				{
+					Name:   "path",
+					Common: `export PATH="$HOME/.testapp/bin:$PATH"`,
+				},
+			},
+		},
 	}
 	if err := bundle.Save(appPath); err != nil {
 		t.Fatal(err)
@@ -78,6 +87,16 @@ func TestApply(t *testing.T) {
 	dest, _ := os.Readlink(targetPath)
 	if dest != sourcePath {
 		t.Errorf("wrong link destination: got %s, want %s", dest, sourcePath)
+	}
+
+	// Verify generated shell init contains app startup snippet
+	generatedPath := filepath.Join(gdfDir, "generated", "init.sh")
+	script, err := os.ReadFile(generatedPath)
+	if err != nil {
+		t.Fatalf("reading generated init script: %v", err)
+	}
+	if !strings.Contains(string(script), `export PATH="$HOME/.testapp/bin:$PATH"`) {
+		t.Errorf("generated init missing app startup snippet:\n%s", string(script))
 	}
 }
 

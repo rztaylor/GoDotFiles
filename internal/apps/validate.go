@@ -76,6 +76,34 @@ func (b *Bundle) Validate() error {
 		}
 	}
 
+	// Validate shell init snippets
+	if b.Shell != nil && len(b.Shell.Init) > 0 {
+		seenInitNames := make(map[string]struct{}, len(b.Shell.Init))
+		for i, snippet := range b.Shell.Init {
+			if snippet.Name == "" {
+				errs = append(errs, &ValidationError{
+					Field:   fmt.Sprintf("shell.init[%d].name", i),
+					Message: "is required",
+				})
+			} else {
+				if _, exists := seenInitNames[snippet.Name]; exists {
+					errs = append(errs, &ValidationError{
+						Field:   fmt.Sprintf("shell.init[%d].name", i),
+						Message: "must be unique within shell.init",
+					})
+				}
+				seenInitNames[snippet.Name] = struct{}{}
+			}
+
+			if snippet.Common == "" && snippet.Bash == "" && snippet.Zsh == "" {
+				errs = append(errs, &ValidationError{
+					Field:   fmt.Sprintf("shell.init[%d]", i),
+					Message: "must define at least one of common, bash, or zsh",
+				})
+			}
+		}
+	}
+
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}

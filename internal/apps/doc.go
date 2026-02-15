@@ -10,7 +10,7 @@
 //
 // # Key Types
 //
-//   - Bundle: An app bundle (package + dotfiles + aliases)
+//   - Bundle: An app bundle (package + dotfiles + shell integration)
 //   - Companion: A companion app relationship
 //   - Plugin: A plugin definition
 //

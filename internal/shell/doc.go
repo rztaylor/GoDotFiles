@@ -6,6 +6,7 @@
 //   - Generating combined alias files from all active apps
 //   - Generating function definitions
 //   - Setting up environment variables
+//   - Emitting app startup/init snippets
 //   - Loading shell completions
 //   - Auto-injecting source line into shell RC files
 //   - Supporting bash and zsh shells

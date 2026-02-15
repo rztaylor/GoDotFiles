@@ -52,6 +52,13 @@ func (g *Generator) Generate(bundles []*apps.Bundle, shellType ShellType, output
 		script.WriteString(functions)
 	}
 
+	// Init
+	initSnippets := g.generateInit(bundles, shellType)
+	if initSnippets != "" {
+		script.WriteString("\n# Init\n")
+		script.WriteString(initSnippets)
+	}
+
 	// Completions
 	completions := g.generateCompletions(bundles, shellType)
 	if completions != "" {
@@ -228,6 +235,64 @@ func (g *Generator) generateCompletions(bundles []*apps.Bundle, shellType ShellT
 	}
 
 	return out.String()
+}
+
+// generateInit generates shell startup snippets from app bundles.
+func (g *Generator) generateInit(bundles []*apps.Bundle, shellType ShellType) string {
+	var out strings.Builder
+	hasInit := false
+
+	for _, bundle := range bundles {
+		if bundle.Shell == nil || len(bundle.Shell.Init) == 0 {
+			continue
+		}
+
+		for _, snippet := range bundle.Shell.Init {
+			cmd := snippet.Common
+			switch shellType {
+			case Bash:
+				if snippet.Bash != "" {
+					cmd = snippet.Bash
+				}
+			case Zsh:
+				if snippet.Zsh != "" {
+					cmd = snippet.Zsh
+				}
+			}
+
+			if cmd == "" {
+				continue
+			}
+
+			hasInit = true
+			fmt.Fprintf(&out, "# %s:%s\n", bundle.Name, snippet.Name)
+			if snippet.Guard != "" {
+				fmt.Fprintf(&out, "if %s; then\n", snippet.Guard)
+				writeIndentedLines(&out, cmd, "  ")
+				out.WriteString("fi\n")
+			} else {
+				writeIndentedLines(&out, cmd, "")
+			}
+		}
+	}
+
+	if !hasInit {
+		return ""
+	}
+	return out.String()
+}
+
+func writeIndentedLines(out *strings.Builder, script, indent string) {
+	lines := strings.Split(script, "\n")
+	for _, line := range lines {
+		if line == "" {
+			out.WriteString("\n")
+			continue
+		}
+		out.WriteString(indent)
+		out.WriteString(line)
+		out.WriteString("\n")
+	}
 }
 
 // extractCommand extracts the first word from a command string.

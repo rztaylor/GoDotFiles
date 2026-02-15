@@ -7,3 +7,9 @@ package:
   custom:
     script: curl -sS https://starship.rs/install.sh | sh
     sudo: true
+shell:
+  init:
+    - name: starship-init
+      bash: eval "$(starship init bash)"
+      zsh: eval "$(starship init zsh)"
+      guard: command -v starship >/dev/null 2>&1

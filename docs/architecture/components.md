@@ -11,7 +11,7 @@ Each internal package has a specific responsibility.
 | `internal/engine` | Core orchestration and business logic |
 | `internal/apps` | App bundle CRUD, companion/plugin management |
 | `internal/packages` | Package manager abstractions (brew, apt, dnf) |
-| `internal/shell` | Shell script generation, aliases, functions |
+| `internal/shell` | Shell script generation, aliases, functions, startup init tasks |
 | `internal/platform` | OS detection, path normalization |
 | `internal/git` | Git operations (clone, commit, push, pull) |
 | `internal/state` | Applied profile state tracking (local only) |
@@ -71,6 +71,7 @@ Generates shell integration:
 - Combined aliases from all apps
 - Function definitions
 - Environment variables
+- Managed startup/init snippets from app definitions
 - Completions loading
 
 ### `internal/platform`

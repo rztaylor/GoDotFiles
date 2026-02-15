@@ -96,6 +96,14 @@ shell:
     bash: string          # Command to generate bash completions
     zsh: string           # Command to generate zsh completions
 
+  init:
+    - name: string        # Required: unique snippet id within this app
+      common: string      # Optional: default command for all shells
+      bash: string        # Optional: bash-specific command (overrides common)
+      zsh: string         # Optional: zsh-specific command (overrides common)
+      guard: string       # Optional: condition wrapper (if <guard>; then ...)
+                          # At least one of common/bash/zsh is required
+
 # ─────────────────────────────────────────────────────────────────
 # HOOKS
 # ─────────────────────────────────────────────────────────────────
@@ -197,6 +205,30 @@ dotfiles:
   - source: kube/config.work
     target: ~/.kube/config.d/work
     when: hostname =~ '^work-.*'
+```
+
+---
+
+### fnm - Managed Shell Startup
+
+```yaml
+kind: App/v1
+name: fnm
+description: Fast Node.js version manager
+
+package:
+  brew: fnm
+  apt:
+    name: fnm
+
+shell:
+  init:
+    - name: fnm-path
+      common: export PATH="$HOME/.local/share/fnm:$PATH"
+    - name: fnm-env
+      bash: eval "$(fnm env --use-on-cd --shell bash)"
+      zsh: eval "$(fnm env --use-on-cd --shell zsh)"
+      guard: command -v fnm >/dev/null 2>&1
 ```
 
 ---

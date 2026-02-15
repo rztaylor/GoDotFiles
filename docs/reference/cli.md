@@ -225,7 +225,7 @@ This command performs the following operations:
 3. **Install packages** - Installs packages via package managers (when available)
 4. **Link dotfiles** - Creates symlinks with conflict resolution
 5. **Run apply hooks** - Executes hooks for package-less bundles
-6. **Generate shell integration** - Updates shell scripts for aliases/functions
+6. **Generate shell integration** - Updates shell scripts for aliases/functions/env/init/completions
 7. **Log operations** - Records all operations to `.operations/` for rollback
 8. **Update state** - Records applied profiles to `~/.gdf/state.yaml` (local only)
 

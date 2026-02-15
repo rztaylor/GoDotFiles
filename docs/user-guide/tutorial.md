@@ -208,7 +208,7 @@ You can skip this step and do it later — everything up to the [Saving and Sync
 
 ### Shell Integration
 
-GDF generates a shell script at `~/.gdf/generated/init.sh` containing your aliases, environment variables, and functions. During `gdf init`, you'll be prompted to add the source line to your shell RC file automatically. If you prefer to do it manually, add this to your `~/.bashrc` or `~/.zshrc`:
+GDF generates a shell script at `~/.gdf/generated/init.sh` containing your aliases, environment variables, functions, and startup init snippets. During `gdf init`, you'll be prompted to add the source line to your shell RC file automatically. If you prefer to do it manually, add this to your `~/.bashrc` or `~/.zshrc`:
 
 ```bash
 [ -f ~/.gdf/generated/init.sh ] && source ~/.gdf/generated/init.sh
@@ -658,7 +658,7 @@ GDF performs these operations in order:
 2. **Resolves app dependencies** — apps are ordered topologically.
 3. **Installs packages** — uses the appropriate package manager for your OS (Homebrew on macOS, apt on Ubuntu/Debian, dnf on Fedora).
 4. **Links dotfiles** — creates symlinks from your home directory to `~/.gdf/dotfiles/`.
-5. **Generates shell integration** — writes `~/.gdf/generated/init.sh` with all your aliases, environment variables, and functions.
+5. **Generates shell integration** — writes `~/.gdf/generated/init.sh` with all your aliases, environment variables, functions, and startup init snippets.
 6. **Logs operations** — saves a timestamped log to `~/.gdf/.operations/` for potential rollback.
 7. **Updates state** — records which profiles were applied to `~/.gdf/state.yaml` (local only).
 

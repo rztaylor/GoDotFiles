@@ -7,3 +7,9 @@ package:
   custom:
     script: curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
     sudo: true
+shell:
+  init:
+    - name: zoxide-init
+      bash: eval "$(zoxide init bash)"
+      zsh: eval "$(zoxide init zsh)"
+      guard: command -v zoxide >/dev/null 2>&1

@@ -332,3 +332,136 @@ func TestGenerator_ShellSpecific(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerator_InitSnippets(t *testing.T) {
+	bundles := []*apps.Bundle{
+		{
+			Name: "fnm",
+			Shell: &apps.Shell{
+				Init: []apps.InitSnippet{
+					{
+						Name:   "path",
+						Common: `export PATH="$HOME/.local/share/fnm:$PATH"`,
+					},
+					{
+						Name:  "env",
+						Bash:  `eval "$(fnm env --shell bash)"`,
+						Zsh:   `eval "$(fnm env --shell zsh)"`,
+						Guard: "command -v fnm >/dev/null 2>&1",
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		shellType ShellType
+		want      []string
+		notWant   []string
+	}{
+		{
+			name:      "bash picks bash-specific command",
+			shellType: Bash,
+			want: []string{
+				"# Init",
+				"# fnm:path",
+				`export PATH="$HOME/.local/share/fnm:$PATH"`,
+				"# fnm:env",
+				"if command -v fnm >/dev/null 2>&1; then",
+				`eval "$(fnm env --shell bash)"`,
+			},
+			notWant: []string{
+				`eval "$(fnm env --shell zsh)"`,
+			},
+		},
+		{
+			name:      "zsh picks zsh-specific command",
+			shellType: Zsh,
+			want: []string{
+				`eval "$(fnm env --shell zsh)"`,
+			},
+			notWant: []string{
+				`eval "$(fnm env --shell bash)"`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			outputPath := filepath.Join(tmpDir, "init.sh")
+
+			g := NewGenerator()
+			err := g.Generate(bundles, tt.shellType, outputPath, nil)
+			if err != nil {
+				t.Fatalf("Generate() error = %v", err)
+			}
+
+			content, err := os.ReadFile(outputPath)
+			if err != nil {
+				t.Fatalf("Failed to read generated file: %v", err)
+			}
+
+			contentStr := string(content)
+			for _, want := range tt.want {
+				if !strings.Contains(contentStr, want) {
+					t.Errorf("Generated content missing %q.\nGot:\n%s", want, contentStr)
+				}
+			}
+			for _, notWant := range tt.notWant {
+				if strings.Contains(contentStr, notWant) {
+					t.Errorf("Generated content unexpectedly contains %q.\nGot:\n%s", notWant, contentStr)
+				}
+			}
+		})
+	}
+}
+
+func TestGenerator_InitOrdering(t *testing.T) {
+	bundles := []*apps.Bundle{
+		{
+			Name: "base",
+			Shell: &apps.Shell{
+				Init: []apps.InitSnippet{
+					{Name: "a", Common: "echo base-a"},
+					{Name: "b", Common: "echo base-b"},
+				},
+			},
+		},
+		{
+			Name: "work",
+			Shell: &apps.Shell{
+				Init: []apps.InitSnippet{
+					{Name: "c", Common: "echo work-c"},
+				},
+			},
+		},
+	}
+
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "init.sh")
+
+	g := NewGenerator()
+	err := g.Generate(bundles, Bash, outputPath, nil)
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("Failed to read generated file: %v", err)
+	}
+
+	contentStr := string(content)
+	first := strings.Index(contentStr, "echo base-a")
+	second := strings.Index(contentStr, "echo base-b")
+	third := strings.Index(contentStr, "echo work-c")
+
+	if first == -1 || second == -1 || third == -1 {
+		t.Fatalf("missing init snippets in generated output:\n%s", contentStr)
+	}
+	if !(first < second && second < third) {
+		t.Errorf("init snippets are out of order:\n%s", contentStr)
+	}
+}

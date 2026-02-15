@@ -6,3 +6,9 @@ package:
   apt:
     name: direnv
   dnf: direnv
+shell:
+  init:
+    - name: direnv-hook
+      bash: eval "$(direnv hook bash)"
+      zsh: eval "$(direnv hook zsh)"
+      guard: command -v direnv >/dev/null 2>&1

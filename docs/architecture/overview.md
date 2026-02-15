@@ -34,7 +34,7 @@ GDF is built with a layered architecture that separates concerns and enables cro
 
 ## Design Principles
 
-1. **App Bundle as First-Class Concept** - Packages, dotfiles, and aliases belong together
+1. **App Bundle as First-Class Concept** - Packages, dotfiles, and shell integration belong together
 2. **80/20 CLI** - Common operations via CLI, advanced via YAML
 3. **Cross-Platform Abstraction** - OS differences hidden behind interfaces
 4. **Git-Native Storage** - Everything is version controlled
@@ -149,4 +149,3 @@ cmd/gdf/main.go
 - [UI Style Guide](../reference/ui-style-guide.md)
 - [YAML Schemas](../reference/yaml-schemas.md)
 - [CLI Reference](../reference/cli.md)
-

@@ -1,10 +1,10 @@
 # GDF - Go Dotfiles Manager
 
-A cross-platform dotfile manager that unifies **packages, configuration files, and shell aliases** into coherent "app bundles."
+A cross-platform dotfile manager that unifies **packages, configuration files, and shell integration** into coherent "app bundles."
 
 ## Features
 
-- 🎯 **App Bundles** - Package + config + aliases managed together
+- 🎯 **App Bundles** - Package + config + shell integration managed together
 - 🔗 **Composable Profiles** - Mix and match: base, work, programming, sre
 - 🖥️ **Cross-Platform** - macOS, Linux, WSL with OS abstraction
 - 📦 **Package Management** - Homebrew, apt, dnf with unified interface

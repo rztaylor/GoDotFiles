@@ -103,6 +103,29 @@ Phase 2+: Implement age encryption
 
 ---
 
+### 6. Managed Shell Startup Tasks
+
+**Problem:** Many apps require manual RC/profile edits (PATH/eval/source lines), which creates unmanaged drift and makes app removal incomplete.
+
+**Decision:** Keep a single RC source line and generate startup snippets from app YAML into `~/.gdf/generated/init.sh`.
+
+```yaml
+shell:
+  init:
+    - name: fnm-env
+      bash: eval "$(fnm env --shell bash)"
+      zsh: eval "$(fnm env --shell zsh)"
+      guard: command -v fnm >/dev/null 2>&1
+```
+
+**Rationale:**
+- Centralized ownership and deterministic regeneration during `gdf apply`
+- No per-app mutation of user RC files
+- Add/remove app automatically adds/removes startup behavior
+- Extensible to future shells without changing RC integration model
+
+---
+
 ## 🟡 App Bundles Without Packages
 
 **Insight:** An app bundle should NOT require a package installation.
@@ -167,6 +190,7 @@ This makes app bundles a flexible container for:
 | Dependencies | Explicit field | Required for complex tools |
 | Secrets | Flag + gitignore (Phase 1) | Encryption deferred |
 | Package-less bundles | Supported | Enables mac-preferences use case |
+| Shell startup tasks | Generated in init.sh | Keep RC files clean and app-scoped |
 
 ---
 

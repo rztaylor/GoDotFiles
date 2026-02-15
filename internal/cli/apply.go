@@ -27,7 +27,7 @@ This command will:
   3. Install packages (if package manager available)
   4. Link dotfiles with conflict resolution
   5. Run apply hooks for package-less bundles
-  6. Generate shell integration scripts
+  6. Generate shell integration scripts (aliases, env, functions, init, completions)
 
 All operations are logged to ~/.gdf/.operations/ for potential rollback.`,
 	Example: `  gdf apply base work

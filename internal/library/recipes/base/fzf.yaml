@@ -6,3 +6,9 @@ package:
   apt:
     name: fzf
   dnf: fzf
+shell:
+  init:
+    - name: fzf-integration
+      bash: source <(fzf --bash)
+      zsh: source <(fzf --zsh)
+      guard: command -v fzf >/dev/null 2>&1

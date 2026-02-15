@@ -6,8 +6,7 @@ import (
 
 // Bundle represents an app bundle - the core unit in GDF.
 // A bundle groups together a package, its configuration files (dotfiles),
-// A bundle groups together a package, its configuration files (dotfiles),
-// shell aliases/functions, and lifecycle hooks.
+// shell integration, and lifecycle hooks.
 type Bundle struct {
 	schema.TypeMeta `yaml:",inline"`
 	// Name is the unique identifier for this app bundle (required).
@@ -27,7 +26,7 @@ type Bundle struct {
 	// Dotfiles lists configuration files to symlink.
 	Dotfiles []Dotfile `yaml:"dotfiles,omitempty"`
 
-	// Shell defines shell integration (aliases, functions, env vars).
+	// Shell defines shell integration (aliases, functions, env vars, init snippets).
 	Shell *Shell `yaml:"shell,omitempty"`
 
 	// Hooks defines lifecycle commands to run.

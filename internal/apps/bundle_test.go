@@ -65,6 +65,10 @@ shell:
   aliases:
     gs: git status
     gp: git push
+  init:
+    - name: go-path
+      common: export PATH="$HOME/.local/go/bin:$PATH"
+      guard: test -d "$HOME/.local/go/bin"
   completions:
     bash: git completion bash
     zsh: git completion zsh
@@ -204,6 +208,23 @@ func TestBundle_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid shell init snippets",
+			bundle: Bundle{
+				Name: "fnm",
+				Shell: &Shell{
+					Init: []InitSnippet{
+						{
+							Name:   "fnm-env",
+							Bash:   `eval "$(fnm env --shell bash)"`,
+							Zsh:    `eval "$(fnm env --shell zsh)"`,
+							Guard:  "command -v fnm >/dev/null 2>&1",
+							Common: `export PATH="$HOME/.local/share/fnm:$PATH"`,
+						},
+					},
+				},
+			},
+		},
+		{
 			name:    "missing name",
 			bundle:  Bundle{},
 			wantErr: true,
@@ -234,6 +255,43 @@ func TestBundle_Validate(t *testing.T) {
 				Name: "test",
 				Dotfiles: []Dotfile{
 					{Source: "config"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "shell init missing name",
+			bundle: Bundle{
+				Name: "test",
+				Shell: &Shell{
+					Init: []InitSnippet{
+						{Common: `export PATH="$HOME/bin:$PATH"`},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "shell init missing command",
+			bundle: Bundle{
+				Name: "test",
+				Shell: &Shell{
+					Init: []InitSnippet{
+						{Name: "empty"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "shell init duplicate names",
+			bundle: Bundle{
+				Name: "test",
+				Shell: &Shell{
+					Init: []InitSnippet{
+						{Name: "dup", Common: "echo one"},
+						{Name: "dup", Common: "echo two"},
+					},
 				},
 			},
 			wantErr: true,
