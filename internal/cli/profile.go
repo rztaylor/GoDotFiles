@@ -370,8 +370,40 @@ func resolveProfileDeleteMode() (profileDeleteMode, error) {
 	if selected > 1 {
 		return "", fmt.Errorf("use only one delete mode: --migrate-to-default, --purge, or --leave-dangling")
 	}
+	if selected == 0 {
+		if globalNonInteractive || !hasInteractiveTerminal() {
+			return profileDeleteModeMigrateToDefault, nil
+		}
+		return chooseProfileDeleteModeInteractive()
+	}
 
 	return mode, nil
+}
+
+func chooseProfileDeleteModeInteractive() (profileDeleteMode, error) {
+	fmt.Println("Choose profile delete strategy:")
+	fmt.Println("  1) migrate apps to default")
+	fmt.Println("  2) purge unique apps")
+	fmt.Println("  3) leave apps dangling")
+	input, err := readInteractiveLine("Select [1-3] (default: 1): ")
+	if err != nil {
+		return "", err
+	}
+	return parseProfileDeleteModeChoice(input)
+}
+
+func parseProfileDeleteModeChoice(input string) (profileDeleteMode, error) {
+	choice := strings.TrimSpace(input)
+	switch choice {
+	case "", "1", "migrate", "migrate-to-default":
+		return profileDeleteModeMigrateToDefault, nil
+	case "2", "purge":
+		return profileDeleteModePurge, nil
+	case "3", "leave", "leave-dangling":
+		return profileDeleteModeLeaveDangling, nil
+	default:
+		return "", fmt.Errorf("invalid profile delete strategy %q (use 1, 2, or 3)", choice)
+	}
 }
 
 func buildProfileDeleteImpact(gdfDir, profileName string, profile *config.Profile, allProfiles []*config.Profile, plat *platform.Platform, mode profileDeleteMode) (*profileDeleteImpact, error) {

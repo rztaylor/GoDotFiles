@@ -38,18 +38,25 @@ var statusDiffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "Show per-file drift details for managed targets",
 	Example: `  gdf status diff
+  gdf status diff --patch
   gdf status diff --json`,
 	RunE: runStatusDiff,
 }
 
 var statusJSON bool
 var statusDiffJSON bool
+var statusDiffPatch bool
+var statusDiffMaxBytes int64
+var statusDiffMaxFiles int
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
 	statusCmd.AddCommand(statusDiffCmd)
 	statusCmd.Flags().BoolVar(&statusJSON, "json", false, "Output status as JSON")
 	statusDiffCmd.Flags().BoolVar(&statusDiffJSON, "json", false, "Output drift details as JSON")
+	statusDiffCmd.Flags().BoolVar(&statusDiffPatch, "patch", false, "Include unified patch output for non-symlink drift targets")
+	statusDiffCmd.Flags().Int64Var(&statusDiffMaxBytes, "max-bytes", 1024*1024, "Maximum source/target file size in bytes for patch generation")
+	statusDiffCmd.Flags().IntVar(&statusDiffMaxFiles, "max-files", 20, "Maximum number of drift files to generate patches for")
 }
 
 func runStatus(cmd *cobra.Command, args []string) error {
@@ -57,7 +64,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	if !git.IsRepository(gdfDir) {
 		return fmt.Errorf("GDF repository not initialized at %s. Please run 'gdf init' first.", gdfDir)
 	}
-	report, err := collectStatusReport(gdfDir, false)
+	report, err := collectStatusReport(gdfDir, driftOptions{})
 	if err != nil {
 		return err
 	}
@@ -113,7 +120,14 @@ func runStatus(cmd *cobra.Command, args []string) error {
 }
 
 func runStatusDiff(cmd *cobra.Command, args []string) error {
-	report, err := collectStatusReport(platform.ConfigDir(), true)
+	opts := driftOptions{
+		IncludeIssues:  true,
+		IncludePreview: true,
+		IncludePatch:   statusDiffPatch,
+		PatchMaxBytes:  statusDiffMaxBytes,
+		PatchMaxFiles:  statusDiffMaxFiles,
+	}
+	report, err := collectStatusReport(platform.ConfigDir(), opts)
 	if err != nil {
 		return err
 	}
@@ -144,9 +158,23 @@ func runStatusDiff(cmd *cobra.Command, args []string) error {
 		if issue.Preview != "" {
 			fmt.Printf("     preview: %s\n", issue.Preview)
 		}
+		if issue.Patch != "" {
+			fmt.Printf("     patch:\n%s\n", issue.Patch)
+		}
+		if issue.PatchSkippedReason != "" {
+			fmt.Printf("     patch: skipped (%s)\n", issue.PatchSkippedReason)
+		}
 	}
 
 	return nil
+}
+
+type driftOptions struct {
+	IncludeIssues  bool
+	IncludePreview bool
+	IncludePatch   bool
+	PatchMaxBytes  int64
+	PatchMaxFiles  int
 }
 
 type statusReport struct {
@@ -174,16 +202,18 @@ type driftSummary struct {
 }
 
 type driftIssue struct {
-	Type     string `json:"type"`
-	App      string `json:"app"`
-	Source   string `json:"source,omitempty"`
-	Target   string `json:"target"`
-	Expected string `json:"expected,omitempty"`
-	Actual   string `json:"actual,omitempty"`
-	Preview  string `json:"preview,omitempty"`
+	Type               string `json:"type"`
+	App                string `json:"app"`
+	Source             string `json:"source,omitempty"`
+	Target             string `json:"target"`
+	Expected           string `json:"expected,omitempty"`
+	Actual             string `json:"actual,omitempty"`
+	Preview            string `json:"preview,omitempty"`
+	Patch              string `json:"patch,omitempty"`
+	PatchSkippedReason string `json:"patch_skipped_reason,omitempty"`
 }
 
-func collectStatusReport(gdfDir string, includeIssues bool) (*statusReport, error) {
+func collectStatusReport(gdfDir string, opts driftOptions) (*statusReport, error) {
 	st, err := state.LoadFromDir(gdfDir)
 	if err != nil {
 		return nil, fmt.Errorf("loading state: %w", err)
@@ -212,7 +242,7 @@ func collectStatusReport(gdfDir string, includeIssues bool) (*statusReport, erro
 		report.LastApplied = st.LastApplied.Format("2006-01-02 15:04:05")
 	}
 
-	issues, err := collectDriftIssues(gdfDir, report.Apps, includeIssues)
+	issues, err := collectDriftIssues(gdfDir, report.Apps, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -231,21 +261,36 @@ func collectStatusReport(gdfDir string, includeIssues bool) (*statusReport, erro
 		}
 	}
 	report.Drift.Total = len(issues)
-	if includeIssues {
+	if opts.IncludeIssues {
 		report.Drift.Issues = issues
 	}
 
 	return report, nil
 }
 
-func collectDriftIssues(gdfDir string, appNames []string, includePreview bool) ([]driftIssue, error) {
+func collectDriftIssues(gdfDir string, appNames []string, opts driftOptions) ([]driftIssue, error) {
 	issues := make([]driftIssue, 0)
 	if len(appNames) == 0 {
 		return issues, nil
 	}
+	if opts.PatchMaxBytes <= 0 {
+		opts.PatchMaxBytes = 1024 * 1024
+	}
+	if opts.PatchMaxFiles <= 0 {
+		opts.PatchMaxFiles = 20
+	}
 
 	plat := platform.Detect()
 	lib := library.New()
+	cache := loadDriftCache(gdfDir)
+	cacheDirty := false
+	patchCount := 0
+	defer func() {
+		if cacheDirty {
+			_ = saveDriftCache(gdfDir, cache)
+		}
+	}()
+
 	for _, appName := range appNames {
 		bundle, err := loadBundleForStatus(gdfDir, appName, lib)
 		if err != nil {
@@ -297,8 +342,22 @@ func collectDriftIssues(gdfDir string, appNames []string, includePreview bool) (
 					Source: sourceAbs,
 					Target: targetAbs,
 				}
-				if includePreview {
-					issue.Preview = diffPreview(sourceAbs, targetAbs)
+				if opts.IncludePreview || opts.IncludePatch {
+					preview, patch, skipped, updated := cachedDiffDetails(cache, sourceAbs, targetAbs, opts.IncludePatch, opts.PatchMaxBytes)
+					if updated {
+						cacheDirty = true
+					}
+					issue.Preview = preview
+					if opts.IncludePatch {
+						if patchCount >= opts.PatchMaxFiles {
+							issue.PatchSkippedReason = fmt.Sprintf("hit --max-files limit (%d)", opts.PatchMaxFiles)
+						} else if patch != "" {
+							issue.Patch = patch
+							patchCount++
+						} else if skipped != "" {
+							issue.PatchSkippedReason = skipped
+						}
+					}
 				}
 				issues = append(issues, issue)
 				continue

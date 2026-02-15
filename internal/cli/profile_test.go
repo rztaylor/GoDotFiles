@@ -424,6 +424,36 @@ func TestProfileDeleteModeConflict(t *testing.T) {
 	}
 }
 
+func TestParseProfileDeleteModeChoice(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    profileDeleteMode
+		wantErr bool
+	}{
+		{name: "default empty", in: "", want: profileDeleteModeMigrateToDefault},
+		{name: "choice 1", in: "1", want: profileDeleteModeMigrateToDefault},
+		{name: "migrate string", in: "migrate-to-default", want: profileDeleteModeMigrateToDefault},
+		{name: "choice 2", in: "2", want: profileDeleteModePurge},
+		{name: "purge string", in: "purge", want: profileDeleteModePurge},
+		{name: "choice 3", in: "3", want: profileDeleteModeLeaveDangling},
+		{name: "leave string", in: "leave-dangling", want: profileDeleteModeLeaveDangling},
+		{name: "invalid", in: "invalid", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseProfileDeleteModeChoice(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseProfileDeleteModeChoice() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && got != tt.want {
+				t.Fatalf("parseProfileDeleteModeChoice() = %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestProfileDeleteDryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 	gdfDir := filepath.Join(tmpDir, ".gdf")

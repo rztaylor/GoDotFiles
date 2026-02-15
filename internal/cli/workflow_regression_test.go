@@ -72,7 +72,7 @@ func TestCoreWorkflowRegression_InitAddTrackApplyStatusRollback(t *testing.T) {
 		t.Fatalf("runApply() error = %v", err)
 	}
 
-	report, err := collectStatusReport(gdfDir, false)
+	report, err := collectStatusReport(gdfDir, driftOptions{})
 	if err != nil {
 		t.Fatalf("collectStatusReport() error = %v", err)
 	}

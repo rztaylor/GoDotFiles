@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add stable CLI exit codes for health and non-interactive failure paths to make scripting more reliable.
 - Add `gdf app remove --uninstall` cleanup flow with preview and guarded confirmation, including package uninstall only when uniquely owned by the removed app.
 - Add `gdf profile delete` mode flags (`--migrate-to-default`, `--purge`, `--leave-dangling`) with `--dry-run` impact previews.
+- Add `gdf app prune` to detect orphaned app definitions and archive them by default, with optional permanent delete mode.
+- Add optional patch-style output to `gdf status diff` with explicit `--max-files` and `--max-bytes` limits.
+- Add `gdf health fix --guarded` and `gdf health fix --dry-run` for previewable higher-impact remediations with backup-before-write behavior.
 
 ### Changed
 - Reorganize app lifecycle commands under `gdf app` (`add`, `remove`, `list`, `install`, `track`, `move`, `library`) and recovery commands under `gdf recover` (`rollback`, `restore`), while keeping `init`, `save`, `push`, `pull`, and `sync` as top-level commands.
@@ -24,6 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add global `--yes` and `--non-interactive` flags for deterministic prompt handling in health and risky-apply flows.
 - Add `gdf apply --dry-run --json` plan output for automation workflows.
 - Expand prompt handling coverage so more interactive command paths follow deterministic `--non-interactive` and `--yes` behavior.
+- Add interactive strategy selection for `gdf profile delete` when no delete mode flag is provided.
+- Add orphan cleanup guidance after `gdf app remove` when an app is no longer referenced by any profile.
+- Improve `gdf status diff` responsiveness for repeated runs by caching drift preview metadata.
 
 ### Fixed
 - Require `gdf health` commands to run only inside an initialized `~/.gdf` repository, matching other repo-dependent commands.

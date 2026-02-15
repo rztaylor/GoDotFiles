@@ -16,31 +16,6 @@ For 1.0 prioritization:
 
 ---
 
-## Priority 0: 1.0 Release Blockers (Must Ship Before Public 1.0)
-
-No remaining pending tasks.
-
----
-
-## Priority 1: 1.0.x Hardening (Important, Backward-Compatible)
-
-### 1.1 Lifecycle Hygiene and Repository Cleanliness
-- [ ] Implement orphaned app detection (app YAMLs not referenced by any profile)
-- [ ] Add `gdf app prune` to remove or archive dangling app definitions
-- [ ] Add optional cleanup guidance when removing the last profile reference to an app (must respect non-interactive behavior)
-
-### 1.2 Profile UX Improvements
-- [ ] Add interactive delete strategy: migrate to `default`, purge unique apps, or leave as dangling
-
-### 1.3 Drift Observability and Scale
-- [ ] Expand `gdf status diff` with optional full patch-style diffs and clear performance limits
-- [ ] Improve drift/diff performance with incremental scanning or cached metadata to keep large repos responsive
-
-### 1.4 Health Fix Expansion (Guarded)
-- [ ] Expand `gdf health fix` beyond safe-only remediations with explicit guarded modes for higher-impact fixes (with previews and backups)
-
----
-
 ## Priority 2: Post-1.0 Adoption and Reproducibility (1.1+)
 
 ### 2.1 Onboarding and Migration

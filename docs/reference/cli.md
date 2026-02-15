@@ -85,6 +85,7 @@ Remove an app bundle from a profile.
 | `--yes`                   | Skip uninstall/unlink confirmation prompt |
 
 When `--uninstall` is set, GDF prints a removal plan before applying changes.
+When an app becomes unreferenced by all profiles, GDF prints cleanup guidance for `gdf app prune`.
 
 #### `gdf app list [flags]`
 
@@ -93,6 +94,23 @@ List apps in a profile.
 | Flag                      | Description                                    |
 | ------------------------- | ---------------------------------------------- |
 | `-p, --profile <profile>` | Profile to list apps from (default: `default`) |
+
+#### `gdf app prune [flags]`
+
+Archive or delete orphaned local app definitions (apps not referenced by any profile).
+
+| Flag | Description |
+| ---- | ----------- |
+| `--dry-run` | Preview orphan cleanup actions without writing changes |
+| `--delete` | Permanently delete orphaned app definitions and their dotfiles (default is archive) |
+| `--json` | Output prune plan/result as JSON |
+| `--yes` | Skip delete confirmation prompt in `--delete` mode |
+
+```bash
+gdf app prune --dry-run
+gdf app prune
+gdf app prune --delete --yes
+```
  
 #### `gdf app library`
 
@@ -233,6 +251,8 @@ Delete mode flags (choose at most one):
 | `--yes` | Skip purge confirmation prompt |
 
 If no mode flag is provided, behavior defaults to `--migrate-to-default`.
+In interactive terminals, GDF prompts you to choose delete strategy when no mode flag is provided.
+In `--non-interactive` mode, it remains deterministic and defaults to migrate.
 
 ```bash
 gdf profile delete old-work
@@ -313,9 +333,14 @@ Show detailed drift findings for managed targets.
 | Flag | Description |
 | ---- | ----------- |
 | `--json` | Output drift details as JSON |
+| `--patch` | Include unified patch output for non-symlink targets |
+| `--max-bytes <n>` | Max source/target file size for patch generation (default: 1048576) |
+| `--max-files <n>` | Max number of patches to generate per run (default: 20) |
 
 ```bash
 gdf status diff
+gdf status diff --patch
+gdf status diff --patch --max-files 10 --max-bytes 262144
 gdf status diff --json
 ```
 
@@ -497,6 +522,11 @@ Run environment health checks (repo structure, shell integration, package manage
 #### `gdf health fix`
 
 Apply safe, reviewable auto-fixes for common doctor findings.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--guarded` | Include higher-impact fixes that require backup-before-write behavior |
+| `--dry-run` | Preview fix actions without applying changes |
 
 #### `gdf health ci`
 

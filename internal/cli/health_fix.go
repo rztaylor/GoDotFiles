@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
@@ -15,21 +16,28 @@ import (
 type fixAction struct {
 	Code        string
 	Description string
+	Guarded     bool
+	Preview     string
 	Run         func() error
 }
 
-func buildFixActions(gdfDir string, findings []healthFinding) []fixAction {
+func buildFixActions(gdfDir string, findings []healthFinding, includeGuarded bool) []fixAction {
 	actions := make([]fixAction, 0)
 	seen := map[string]bool{}
 
-	add := func(code, description string, run func() error) {
+	add := func(code, description string, guarded bool, preview string, run func() error) {
 		if seen[code] {
 			return
 		}
 		seen[code] = true
+		if guarded && !includeGuarded {
+			return
+		}
 		actions = append(actions, fixAction{
 			Code:        code,
 			Description: description,
+			Guarded:     guarded,
+			Preview:     preview,
 			Run:         run,
 		})
 	}
@@ -37,33 +45,33 @@ func buildFixActions(gdfDir string, findings []healthFinding) []fixAction {
 	for _, f := range findings {
 		switch f.Code {
 		case "apps_dir_missing":
-			add("apps_dir_missing", "Create apps directory", func() error {
+			add("apps_dir_missing", "Create apps directory", false, "mkdir -p ~/.gdf/apps", func() error {
 				return os.MkdirAll(filepath.Join(gdfDir, "apps"), 0755)
 			})
 		case "profiles_dir_missing":
-			add("profiles_dir_missing", "Create profiles directory", func() error {
+			add("profiles_dir_missing", "Create profiles directory", false, "mkdir -p ~/.gdf/profiles", func() error {
 				return os.MkdirAll(filepath.Join(gdfDir, "profiles"), 0755)
 			})
 		case "dotfiles_dir_missing":
-			add("dotfiles_dir_missing", "Create dotfiles directory", func() error {
+			add("dotfiles_dir_missing", "Create dotfiles directory", false, "mkdir -p ~/.gdf/dotfiles", func() error {
 				return os.MkdirAll(filepath.Join(gdfDir, "dotfiles"), 0755)
 			})
 		case "generated_dir_missing":
-			add("generated_dir_missing", "Create generated directory", func() error {
+			add("generated_dir_missing", "Create generated directory", false, "mkdir -p ~/.gdf/generated", func() error {
 				return os.MkdirAll(filepath.Join(gdfDir, "generated"), 0755)
 			})
 		case "config_missing":
-			add("config_missing", "Create default config.yaml", func() error {
+			add("config_missing", "Create default config.yaml", false, "write default ~/.gdf/config.yaml", func() error {
 				cfg := &config.Config{}
 				return cfg.Save(filepath.Join(gdfDir, "config.yaml"))
 			})
 		case "state_missing":
-			add("state_missing", "Create empty state.yaml", func() error {
+			add("state_missing", "Create empty state.yaml", false, "write empty ~/.gdf/state.yaml", func() error {
 				st := &state.State{AppliedProfiles: []state.AppliedProfile{}}
 				return st.Save(filepath.Join(gdfDir, "state.yaml"))
 			})
 		case "generated_init_missing":
-			add("generated_init_missing", "Create placeholder generated/init.sh", func() error {
+			add("generated_init_missing", "Create placeholder generated/init.sh", false, "write placeholder ~/.gdf/generated/init.sh", func() error {
 				if err := os.MkdirAll(filepath.Join(gdfDir, "generated"), 0755); err != nil {
 					return err
 				}
@@ -71,13 +79,36 @@ func buildFixActions(gdfDir string, findings []healthFinding) []fixAction {
 				return os.WriteFile(filepath.Join(gdfDir, "generated", "init.sh"), []byte(content), 0644)
 			})
 		case "rc_source_missing":
-			add("rc_source_missing", "Inject GDF source line into shell RC file", func() error {
+			add("rc_source_missing", "Inject GDF source line into shell RC file (with backup)", true, "backup shell RC file, then inject GDF source line", func() error {
 				shellName := platform.DetectShell()
 				shellType := shell.ParseShellType(shellName)
 				if shellType == shell.Unknown {
 					return fmt.Errorf("could not detect supported shell for RC injection")
 				}
+				if rcPath := detectRCPath(shellName); rcPath != "" {
+					if _, err := backupFileIfExists(rcPath); err != nil {
+						return err
+					}
+				}
 				return shell.NewInjector().InjectSourceLine(shellType)
+			})
+		case "config_invalid":
+			add("config_invalid", "Reset invalid config.yaml to defaults (with backup)", true, "backup invalid ~/.gdf/config.yaml, then write default Config/v1", func() error {
+				path := filepath.Join(gdfDir, "config.yaml")
+				if _, err := backupFileIfExists(path); err != nil {
+					return err
+				}
+				cfg := &config.Config{}
+				return cfg.Save(path)
+			})
+		case "state_invalid":
+			add("state_invalid", "Reset invalid state.yaml to empty state (with backup)", true, "backup invalid ~/.gdf/state.yaml, then write empty state", func() error {
+				path := filepath.Join(gdfDir, "state.yaml")
+				if _, err := backupFileIfExists(path); err != nil {
+					return err
+				}
+				st := &state.State{AppliedProfiles: []state.AppliedProfile{}}
+				return st.Save(path)
 			})
 		}
 	}
@@ -91,15 +122,30 @@ func runHealthFix(gdfDir string, w io.Writer) error {
 		return err
 	}
 
-	actions := buildFixActions(gdfDir, doctor.Findings)
+	actions := buildFixActions(gdfDir, doctor.Findings, healthFixGuarded)
 	if len(actions) == 0 {
-		fmt.Fprintln(w, "No auto-fixable issues found.")
+		if !healthFixGuarded {
+			fmt.Fprintln(w, "No safe auto-fixable issues found. Re-run with --guarded to include higher-impact fixes.")
+		} else {
+			fmt.Fprintln(w, "No auto-fixable issues found.")
+		}
 		return nil
 	}
 
 	fmt.Fprintln(w, "Planned fix actions:")
 	for i, action := range actions {
-		fmt.Fprintf(w, "  %d. [%s] %s\n", i+1, action.Code, action.Description)
+		class := "safe"
+		if action.Guarded {
+			class = "guarded"
+		}
+		fmt.Fprintf(w, "  %d. [%s] (%s) %s\n", i+1, action.Code, class, action.Description)
+		if action.Preview != "" {
+			fmt.Fprintf(w, "     preview: %s\n", action.Preview)
+		}
+	}
+	if healthFixDryRun {
+		fmt.Fprintln(w, "Dry run only. No changes were made.")
+		return nil
 	}
 
 	ok, err := confirmPrompt("Apply these changes? [y/N]: ")
@@ -125,4 +171,23 @@ func runHealthFix(gdfDir string, w io.Writer) error {
 	}
 
 	return nil
+}
+
+func backupFileIfExists(path string) (string, error) {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", fmt.Errorf("stat %s: %w", path, err)
+	}
+
+	backupPath := fmt.Sprintf("%s.gdf.bak.%s", path, time.Now().UTC().Format("20060102-150405"))
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read %s for backup: %w", path, err)
+	}
+	if err := os.WriteFile(backupPath, data, 0644); err != nil {
+		return "", fmt.Errorf("write backup %s: %w", backupPath, err)
+	}
+	return backupPath, nil
 }

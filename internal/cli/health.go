@@ -39,6 +39,8 @@ var healthCICmd = &cobra.Command{
 var healthValidateJSON bool
 var healthDoctorJSON bool
 var healthCIJSON bool
+var healthFixGuarded bool
+var healthFixDryRun bool
 
 func init() {
 	rootCmd.AddCommand(healthCmd)
@@ -50,6 +52,8 @@ func init() {
 	healthValidateCmd.Flags().BoolVar(&healthValidateJSON, "json", false, "Output findings as JSON")
 	healthDoctorCmd.Flags().BoolVar(&healthDoctorJSON, "json", false, "Output findings as JSON")
 	healthCICmd.Flags().BoolVar(&healthCIJSON, "json", false, "Output findings as JSON")
+	healthFixCmd.Flags().BoolVar(&healthFixGuarded, "guarded", false, "Include guarded, higher-impact fixes that require backups")
+	healthFixCmd.Flags().BoolVar(&healthFixDryRun, "dry-run", false, "Preview fix actions without making changes")
 }
 
 func runHealthValidate(cmd *cobra.Command, args []string) error {

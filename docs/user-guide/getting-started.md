@@ -140,6 +140,19 @@ gdf health validate
 gdf health fix
 ```
 
+To include guarded repair actions (with backups), preview first:
+
+```bash
+gdf health fix --guarded --dry-run
+```
+
+To clean up orphaned app definitions (apps no longer referenced by any profile):
+
+```bash
+gdf app prune --dry-run
+gdf app prune
+```
+
 ## Next Steps
 
 - Full walkthrough with concepts and use-cases: [Tutorial](tutorial.md)

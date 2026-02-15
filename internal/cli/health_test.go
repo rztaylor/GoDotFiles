@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -54,12 +55,18 @@ func TestHealthDoctorAndFix_CreateMissingDirectories(t *testing.T) {
 
 	oldYes := globalYes
 	oldNonInteractive := globalNonInteractive
+	oldGuarded := healthFixGuarded
+	oldDryRun := healthFixDryRun
 	globalYes = true
 	globalNonInteractive = false
 	defer func() {
 		globalYes = oldYes
 		globalNonInteractive = oldNonInteractive
+		healthFixGuarded = oldGuarded
+		healthFixDryRun = oldDryRun
 	}()
+	healthFixGuarded = false
+	healthFixDryRun = false
 
 	var out bytes.Buffer
 	if err := runHealthFix(gdfDir, &out); err != nil {
@@ -70,6 +77,112 @@ func TestHealthDoctorAndFix_CreateMissingDirectories(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(gdfDir, dir)); err != nil {
 			t.Fatalf("expected %s to be recreated: %v", dir, err)
 		}
+	}
+}
+
+func TestHealthFixGuardedRepairsInvalidConfigWithBackup(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+
+	oldHome := os.Getenv("HOME")
+	os.Setenv("HOME", homeDir)
+	defer os.Setenv("HOME", oldHome)
+
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo: %v", err)
+	}
+
+	configPath := filepath.Join(gdfDir, "config.yaml")
+	if err := os.WriteFile(configPath, []byte("kind: Config/v1\n: invalid"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldYes := globalYes
+	oldNonInteractive := globalNonInteractive
+	oldGuarded := healthFixGuarded
+	oldDryRun := healthFixDryRun
+	globalYes = true
+	globalNonInteractive = false
+	healthFixGuarded = true
+	healthFixDryRun = false
+	defer func() {
+		globalYes = oldYes
+		globalNonInteractive = oldNonInteractive
+		healthFixGuarded = oldGuarded
+		healthFixDryRun = oldDryRun
+	}()
+
+	var out bytes.Buffer
+	if err := runHealthFix(gdfDir, &out); err != nil {
+		t.Fatalf("runHealthFix() error = %v", err)
+	}
+
+	matches, err := filepath.Glob(configPath + ".gdf.bak.*")
+	if err != nil {
+		t.Fatalf("glob backup files: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatalf("expected backup file for guarded config repair")
+	}
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "kind: Config/v1") {
+		t.Fatalf("expected rewritten config with valid kind, got: %s", string(content))
+	}
+}
+
+func TestHealthFixDryRunDoesNotMutate(t *testing.T) {
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(homeDir, ".gdf")
+
+	oldHome := os.Getenv("HOME")
+	os.Setenv("HOME", homeDir)
+	defer os.Setenv("HOME", oldHome)
+
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, homeDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo: %v", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(gdfDir, "apps")); err != nil {
+		t.Fatal(err)
+	}
+
+	oldYes := globalYes
+	oldNonInteractive := globalNonInteractive
+	oldGuarded := healthFixGuarded
+	oldDryRun := healthFixDryRun
+	globalYes = true
+	globalNonInteractive = false
+	healthFixGuarded = false
+	healthFixDryRun = true
+	defer func() {
+		globalYes = oldYes
+		globalNonInteractive = oldNonInteractive
+		healthFixGuarded = oldGuarded
+		healthFixDryRun = oldDryRun
+	}()
+
+	var out bytes.Buffer
+	if err := runHealthFix(gdfDir, &out); err != nil {
+		t.Fatalf("runHealthFix() error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(gdfDir, "apps")); !os.IsNotExist(err) {
+		t.Fatalf("dry-run should not recreate missing apps dir")
+	}
+	if !strings.Contains(out.String(), "Dry run only") {
+		t.Fatalf("expected dry-run output, got: %s", out.String())
 	}
 }
 

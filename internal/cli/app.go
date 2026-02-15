@@ -48,12 +48,23 @@ var listCmd = &cobra.Command{
 	RunE:  runList,
 }
 
+var pruneCmd = &cobra.Command{
+	Use:   "prune",
+	Short: "Archive or delete orphaned app definitions",
+	Long:  `Find app definitions that are not referenced by any profile and archive or delete them.`,
+	RunE:  runPrune,
+}
+
 var (
 	targetProfile   string
 	fromRecipe      bool
 	removeUninstall bool
 	removeYes       bool
 	removeDryRun    bool
+	pruneDryRun     bool
+	pruneDelete     bool
+	pruneJSON       bool
+	pruneYes        bool
 )
 
 func init() {
@@ -61,6 +72,7 @@ func init() {
 	appCmd.AddCommand(addCmd)
 	appCmd.AddCommand(removeCmd)
 	appCmd.AddCommand(listCmd)
+	appCmd.AddCommand(pruneCmd)
 	appCmd.AddCommand(libraryCmd)
 
 	addCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to add app to")
@@ -70,6 +82,10 @@ func init() {
 	removeCmd.Flags().BoolVar(&removeDryRun, "dry-run", false, "Preview removal actions without making changes")
 	removeCmd.Flags().BoolVar(&removeYes, "yes", false, "Skip confirmation prompt for uninstall/unlink cleanup")
 	listCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to list apps from")
+	pruneCmd.Flags().BoolVar(&pruneDryRun, "dry-run", false, "Preview prune actions without making changes")
+	pruneCmd.Flags().BoolVar(&pruneDelete, "delete", false, "Permanently delete orphaned app definitions instead of archiving them")
+	pruneCmd.Flags().BoolVar(&pruneJSON, "json", false, "Output prune results as JSON")
+	pruneCmd.Flags().BoolVar(&pruneYes, "yes", false, "Skip confirmation for permanent delete mode")
 }
 
 func runAdd(cmd *cobra.Command, args []string) error {
@@ -224,6 +240,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	if err := executeAppRemovalCleanup(gdfDir, appName, removePlan); err != nil {
 		return err
 	}
+	printDanglingAppCleanupGuidance(gdfDir, appName)
 
 	return nil
 }

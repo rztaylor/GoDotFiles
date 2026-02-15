@@ -203,6 +203,13 @@ Use this after `gdf status` reports drift. It explains exactly what changed, inc
 - non-symlink targets
 - symlink destination mismatches
 
+For non-symlink drift, you can request patch-style output with bounded performance:
+
+```bash
+gdf status diff --patch
+gdf status diff --patch --max-files 10 --max-bytes 262144
+```
+
 ### `gdf health validate`
 
 Use this before apply (and in CI) to validate repository definitions:
@@ -221,6 +228,12 @@ Use this to verify machine readiness:
 ### `gdf health fix`
 
 Use this after `gdf health doctor` to apply safe, reviewable remediations for common setup issues.
+Use `--guarded` to include higher-impact remediations that perform backup-before-write.
+
+```bash
+gdf health fix --guarded --dry-run
+gdf health fix --guarded --yes
+```
 
 ### `gdf health ci`
 

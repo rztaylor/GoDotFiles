@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
@@ -367,5 +368,159 @@ func TestListApps(t *testing.T) {
 	// Run list command
 	if err := runList(nil, nil); err != nil {
 		t.Fatalf("runList() error = %v", err)
+	}
+}
+
+func TestFindOrphanedApps(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	referencedBundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "referenced",
+	}
+	orphanBundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "orphan",
+	}
+	if err := referencedBundle.Save(filepath.Join(gdfDir, "apps", "referenced.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	if err := orphanBundle.Save(filepath.Join(gdfDir, "apps", "orphan.yaml")); err != nil {
+		t.Fatal(err)
+	}
+
+	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
+	profile, err := config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile.Apps = []string{"referenced"}
+	if err := profile.Save(profilePath); err != nil {
+		t.Fatal(err)
+	}
+
+	orphans, err := findOrphanedApps(gdfDir)
+	if err != nil {
+		t.Fatalf("findOrphanedApps() error = %v", err)
+	}
+	if len(orphans) != 1 || orphans[0].Name != "orphan" {
+		t.Fatalf("unexpected orphans: %#v", orphans)
+	}
+}
+
+func TestPruneOrphanedApps_Archive(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	orphanBundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "orphan",
+	}
+	if err := orphanBundle.Save(filepath.Join(gdfDir, "apps", "orphan.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	orphanDotfile := filepath.Join(gdfDir, "dotfiles", "orphan", "config")
+	if err := os.MkdirAll(filepath.Dir(orphanDotfile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(orphanDotfile, []byte("cfg"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := pruneOrphanedApps(gdfDir, false, false, true)
+	if err != nil {
+		t.Fatalf("pruneOrphanedApps() error = %v", err)
+	}
+	if report.Mode != "archive" || len(report.Pruned) != 1 || report.Pruned[0] != "orphan" {
+		t.Fatalf("unexpected report: %#v", report)
+	}
+	if _, err := os.Stat(filepath.Join(gdfDir, "apps", "orphan.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("expected orphan app yaml to be archived")
+	}
+	if _, err := os.Stat(filepath.Join(gdfDir, "dotfiles", "orphan")); !os.IsNotExist(err) {
+		t.Fatalf("expected orphan dotfiles to be archived")
+	}
+	if _, err := os.Stat(filepath.Join(report.ArchiveRoot, "apps", "orphan.yaml")); err != nil {
+		t.Fatalf("expected archived app yaml: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(report.ArchiveRoot, "dotfiles", "orphan", "config")); err != nil {
+		t.Fatalf("expected archived dotfile: %v", err)
+	}
+}
+
+func TestPruneOrphanedApps_Delete(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	orphanBundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "orphan",
+	}
+	if err := orphanBundle.Save(filepath.Join(gdfDir, "apps", "orphan.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	orphanDotfile := filepath.Join(gdfDir, "dotfiles", "orphan", "config")
+	if err := os.MkdirAll(filepath.Dir(orphanDotfile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(orphanDotfile, []byte("cfg"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := pruneOrphanedApps(gdfDir, true, false, true)
+	if err != nil {
+		t.Fatalf("pruneOrphanedApps() error = %v", err)
+	}
+	if report.Mode != "delete" || len(report.Pruned) != 1 {
+		t.Fatalf("unexpected report: %#v", report)
+	}
+	if _, err := os.Stat(filepath.Join(gdfDir, "apps", "orphan.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("expected orphan app yaml to be deleted")
+	}
+	if _, err := os.Stat(filepath.Join(gdfDir, "dotfiles", "orphan")); !os.IsNotExist(err) {
+		t.Fatalf("expected orphan dotfiles to be deleted")
+	}
+}
+
+func TestRemoveApp_PrintsDanglingCleanupGuidance(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	targetProfile = "default"
+	removeUninstall = false
+	removeYes = false
+	removeDryRun = false
+	if err := runAdd(nil, []string{"git"}); err != nil {
+		t.Fatalf("setup: runAdd() error = %v", err)
+	}
+
+	out := captureStdout(t, func() {
+		if err := runRemove(nil, []string{"git"}); err != nil {
+			t.Fatalf("runRemove() error = %v", err)
+		}
+	})
+	if !strings.Contains(out, "no longer referenced by any profile") {
+		t.Fatalf("expected dangling guidance in output, got: %s", out)
 	}
 }
