@@ -267,6 +267,49 @@ func TestRemoveAppWithUninstallSkipsSharedPackage(t *testing.T) {
 	}
 }
 
+func TestAddAppInteractiveIncludesRecipeDependencies(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	oldProfile := targetProfile
+	oldFromRecipe := fromRecipe
+	oldInteractive := addInteractive
+	oldYes := globalYes
+	defer func() {
+		targetProfile = oldProfile
+		fromRecipe = oldFromRecipe
+		addInteractive = oldInteractive
+		globalYes = oldYes
+	}()
+
+	targetProfile = "default"
+	fromRecipe = true
+	addInteractive = true
+	globalYes = true
+
+	if err := runAdd(nil, []string{"backend-dev"}); err != nil {
+		t.Fatalf("runAdd() error = %v", err)
+	}
+
+	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
+	profile, err := config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatalf("loading profile: %v", err)
+	}
+
+	for _, dep := range []string{"backend-dev", "go", "docker", "kubectl", "terraform"} {
+		if !contains(profile.Apps, dep) {
+			t.Fatalf("expected %q in profile apps: %#v", dep, profile.Apps)
+		}
+	}
+}
+
 func TestRemoveAppWithUninstallDryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 	homeDir := filepath.Join(tmpDir, "home")

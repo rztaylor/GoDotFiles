@@ -101,6 +101,12 @@ Optional: initialize from an existing remote repo:
 gdf init git@github.com:your-username/dotfiles.git
 ```
 
+Optional guided bootstrap for first-run profile/apps:
+
+```bash
+gdf init setup --profile base --apps git,kubectl
+```
+
 ### 3. Activate shell integration
 
 `gdf init` already prompts to:
@@ -151,6 +157,14 @@ What this does:
 1. Creates/updates the `git` app bundle.
 2. Moves your managed copy into `~/.gdf/dotfiles/git/.gitconfig`.
 3. Replaces `~/.gitconfig` with a symlink.
+
+If you already have multiple files/aliases to adopt, run import first:
+
+```bash
+gdf app import --preview
+gdf app import                  # guided mapping
+gdf app import --apply --sensitive-handling secret
+```
 
 ### 6. Add aliases through GDF
 

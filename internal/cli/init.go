@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/git"
@@ -26,8 +28,28 @@ With a URL, clones an existing dotfiles repository:
 	RunE: runInit,
 }
 
+var initSetupCmd = &cobra.Command{
+	Use:   "setup",
+	Short: "Run first-run interactive setup",
+	Long: `Run a guided first-run setup for profile/app bootstrap.
+
+Creates ~/.gdf if needed, helps select a profile and starter apps, and optionally outputs JSON summary.`,
+	RunE: runInitSetup,
+}
+
+var (
+	setupProfile string
+	setupApps    string
+	setupJSON    bool
+)
+
 func init() {
 	rootCmd.AddCommand(initCmd)
+	initCmd.AddCommand(initSetupCmd)
+
+	initSetupCmd.Flags().StringVarP(&setupProfile, "profile", "p", "", "Profile name to bootstrap (default: prompt or 'default')")
+	initSetupCmd.Flags().StringVar(&setupApps, "apps", "", "Comma-separated starter apps to add to the selected profile")
+	initSetupCmd.Flags().BoolVar(&setupJSON, "json", false, "Output setup summary as JSON")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -45,6 +67,101 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Create new repo
 	return createNewRepo(gdfDir)
+}
+
+type initSetupSummary struct {
+	Initialized bool     `json:"initialized"`
+	Profile     string   `json:"profile"`
+	Apps        []string `json:"apps"`
+}
+
+func runInitSetup(cmd *cobra.Command, args []string) error {
+	gdfDir := platform.ConfigDir()
+	initialized := git.IsRepository(gdfDir)
+
+	if !initialized {
+		if err := createNewRepo(gdfDir); err != nil {
+			return err
+		}
+		initialized = true
+	} else {
+		fmt.Printf("Using existing GDF repository at %s\n", gdfDir)
+	}
+
+	profileName := strings.TrimSpace(setupProfile)
+	if profileName == "" {
+		profileName = "default"
+		if !globalNonInteractive {
+			input, err := readInteractiveLine("Profile name to bootstrap [default]: ")
+			if err != nil {
+				return err
+			}
+			input = strings.TrimSpace(input)
+			if input != "" {
+				profileName = input
+			}
+		}
+	}
+
+	appNames := parseCSVAppNames(setupApps)
+	if len(appNames) == 0 && !globalNonInteractive {
+		input, err := readInteractiveLine("Starter apps (comma-separated, optional): ")
+		if err != nil {
+			return err
+		}
+		appNames = parseCSVAppNames(input)
+	}
+
+	for _, appName := range appNames {
+		if err := ensureProfileHasApp(gdfDir, profileName, appName); err != nil {
+			return err
+		}
+		appPath := filepath.Join(gdfDir, "apps", appName+".yaml")
+		if _, err := os.Stat(appPath); os.IsNotExist(err) {
+			if err := createAppSkeleton(AppName(appName), appPath); err != nil {
+				return fmt.Errorf("creating app skeleton for %s: %w", appName, err)
+			}
+		}
+	}
+
+	summary := initSetupSummary{
+		Initialized: initialized,
+		Profile:     profileName,
+		Apps:        appNames,
+	}
+	if setupJSON {
+		data, err := json.MarshalIndent(summary, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshaling setup summary: %w", err)
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+
+	fmt.Println("✓ Setup complete")
+	fmt.Printf("Profile: %s\n", profileName)
+	if len(appNames) == 0 {
+		fmt.Println("Starter apps: (none)")
+	} else {
+		fmt.Printf("Starter apps: %s\n", strings.Join(appNames, ", "))
+	}
+	fmt.Println("Next: run `gdf apply` when ready.")
+	return nil
+}
+
+func parseCSVAppNames(raw string) []string {
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	seen := map[string]bool{}
+	for _, part := range parts {
+		name := AppName(strings.TrimSpace(part))
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	return out
 }
 
 func createNewRepo(gdfDir string) error {

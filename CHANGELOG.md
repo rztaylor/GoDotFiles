@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- Add `gdf init setup` for guided first-run profile/app bootstrap with optional JSON summary output.
+- Add `gdf app import` with preview, guided mapping, and apply modes to adopt existing dotfiles and aliases.
+- Add conflict decision audit logs under `.operations/decisions-*.json` for interactive import/track conflict handling.
 - Add `gdf shell completion <bash|zsh>` to generate shell completion scripts for interactive shell setup.
 - Add optional event-based shell auto-reload hooks so updated shell integration is picked up automatically on the next prompt.
 - Add `gdf health validate`, `gdf health doctor`, `gdf health fix`, and `gdf health ci` for validation, diagnostics, safe repair, and CI health checks.
@@ -19,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add `gdf health fix --guarded` and `gdf health fix --dry-run` for previewable higher-impact remediations with backup-before-write behavior.
 
 ### Changed
+- Add `--interactive` mode to `gdf app add` for recipe suggestions and dependency prompts.
+- Add `--interactive` mode to `gdf app track` with explicit conflict previews and resolution choices.
 - Reorganize app lifecycle commands under `gdf app` (`add`, `remove`, `list`, `install`, `track`, `move`, `library`) and recovery commands under `gdf recover` (`rollback`, `restore`), while keeping `init`, `save`, `push`, `pull`, and `sync` as top-level commands.
 - Improve the getting started guide with a clearer quickstart flow and valid follow-up documentation links.
 - Update `gdf init` shell onboarding to ask whether to enable event-based auto-reload (default yes) for faster out-of-the-box shell updates.

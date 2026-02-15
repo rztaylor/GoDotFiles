@@ -22,6 +22,7 @@ func DetectAppFromPath(path string) string {
 		"config.fish":   "fish",
 		"starship.toml": "starship",
 		".tmux.conf":    "tmux",
+		"credentials":   "aws",
 	}
 
 	if app, ok := mappings[base]; ok {

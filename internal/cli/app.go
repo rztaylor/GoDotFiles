@@ -58,6 +58,7 @@ var pruneCmd = &cobra.Command{
 var (
 	targetProfile   string
 	fromRecipe      bool
+	addInteractive  bool
 	removeUninstall bool
 	removeYes       bool
 	removeDryRun    bool
@@ -77,6 +78,7 @@ func init() {
 
 	addCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to add app to")
 	addCmd.Flags().BoolVar(&fromRecipe, "from-recipe", false, "Use library recipe without prompting")
+	addCmd.Flags().BoolVar(&addInteractive, "interactive", false, "Enable interactive recipe suggestions and dependency prompts")
 	removeCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to remove app from")
 	removeCmd.Flags().BoolVar(&removeUninstall, "uninstall", false, "Also unlink managed dotfiles and uninstall the app package when no profiles reference the app")
 	removeCmd.Flags().BoolVar(&removeDryRun, "dry-run", false, "Preview removal actions without making changes")
@@ -91,6 +93,11 @@ func init() {
 func runAdd(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	gdfDir := platform.ConfigDir()
+	if addInteractive {
+		if err := maybeSuggestRecipes(appName); err != nil {
+			return err
+		}
+	}
 
 	// 1. Check/Create app definition
 	appPath := filepath.Join(gdfDir, "apps", appName+".yaml")
@@ -118,6 +125,11 @@ func runAdd(cmd *cobra.Command, args []string) error {
 			bundle := recipe.ToBundle()
 			if err := bundle.Save(appPath); err != nil {
 				return fmt.Errorf("saving app bundle: %w", err)
+			}
+			if addInteractive {
+				if err := maybeIncludeRecipeDependencies(bundle, targetProfile, gdfDir); err != nil {
+					return err
+				}
 			}
 		} else {
 			fmt.Printf("App '%s' not found in library.\n", appName)
@@ -175,6 +187,52 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✓ Added '%s' to profile '%s'\n", appName, targetProfile)
+	return nil
+}
+
+func maybeSuggestRecipes(appName string) error {
+	mgr := library.New()
+	names, err := mgr.List()
+	if err != nil {
+		return nil
+	}
+
+	suggestions := make([]string, 0, 3)
+	lower := strings.ToLower(appName)
+	for _, name := range names {
+		n := strings.ToLower(name)
+		if strings.Contains(n, lower) || strings.Contains(lower, n) {
+			suggestions = append(suggestions, name)
+		}
+		if len(suggestions) == 3 {
+			break
+		}
+	}
+	if len(suggestions) > 0 {
+		fmt.Printf("Recipe suggestions: %s\n", strings.Join(suggestions, ", "))
+	}
+	return nil
+}
+
+func maybeIncludeRecipeDependencies(bundle *apps.Bundle, profileName, gdfDir string) error {
+	if bundle == nil || len(bundle.Dependencies) == 0 {
+		return nil
+	}
+
+	fmt.Printf("Recipe dependencies for '%s': %s\n", bundle.Name, strings.Join(bundle.Dependencies, ", "))
+	includeDeps, err := confirmPromptDefaultYes("Add these dependencies to the profile now? [Y/n]: ")
+	if err != nil {
+		return err
+	}
+	if !includeDeps {
+		return nil
+	}
+
+	for _, dep := range bundle.Dependencies {
+		if err := addAppToProfile(gdfDir, profileName, dep); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

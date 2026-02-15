@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -161,6 +162,7 @@ func TestAnalyzeApp(t *testing.T) {
 		{"/home/user/.gitconfig", "git"},
 		{"/home/user/.zshrc", "zsh"},
 		{"/home/user/.config/nvim/init.vim", "nvim"}, // dirname is nvim
+		{"/home/user/.aws/credentials", "aws"},
 		{"/home/user/unknown.conf", "unknown"},
 	}
 
@@ -169,5 +171,56 @@ func TestAnalyzeApp(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("DetectAppFromPath(%q) = %q, want %q", tt.path, got, tt.want)
 		}
+	}
+}
+
+func TestTrack_InteractiveConflictNonInteractiveStop(t *testing.T) {
+	tmpDir := t.TempDir()
+	home := filepath.Join(tmpDir, "home")
+	gdfDir := filepath.Join(home, ".gdf")
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(home, 0755); err != nil {
+		t.Fatal(err)
+	}
+	configureGitUserGlobal(t, home)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatal(err)
+	}
+
+	dotfile := filepath.Join(home, ".testrc")
+	if err := os.WriteFile(dotfile, []byte("first"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTrack(nil, []string{dotfile}); err != nil {
+		t.Fatalf("first runTrack() error = %v", err)
+	}
+
+	// recreate file at original target so track can be attempted again
+	if err := os.Remove(dotfile); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dotfile, []byte("second"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldInteractive := trackInteractive
+	oldNonInteractive := globalNonInteractive
+	trackInteractive = true
+	globalNonInteractive = true
+	defer func() {
+		trackInteractive = oldInteractive
+		globalNonInteractive = oldNonInteractive
+	}()
+
+	err := runTrack(nil, []string{dotfile})
+	if err == nil {
+		t.Fatal("expected non-interactive stop error, got nil")
+	}
+	if ExitCode(err) != exitCodeNonInteractiveStop {
+		t.Fatalf("ExitCode(err) = %d, want %d", ExitCode(err), exitCodeNonInteractiveStop)
+	}
+	var coded *exitCodeError
+	if !errors.As(err, &coded) {
+		t.Fatalf("expected exitCodeError, got %T", err)
 	}
 }

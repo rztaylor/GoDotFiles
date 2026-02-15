@@ -38,6 +38,12 @@ gdf init git@github.com:username/dotfiles.git
 
 GDF stores everything under `~/.gdf/`.
 
+Optional guided bootstrap:
+
+```bash
+gdf init setup --profile base --apps git,kubectl
+```
+
 ## 3. Activate Shell Integration
 
 `gdf init` prompts to:
@@ -74,6 +80,14 @@ gdf app track ~/.gitconfig -a git
 ```
 
 This moves your managed copy into `~/.gdf/dotfiles/git/.gitconfig` and symlinks `~/.gitconfig` to it.
+
+If you already have many existing configs and aliases, use import:
+
+```bash
+gdf app import --preview
+gdf app import                  # guided mapping
+gdf app import --apply --sensitive-handling secret
+```
 
 ## 6. Add a Couple of Aliases
 

@@ -52,6 +52,21 @@ gdf init                              # Create new repo
 gdf init git@github.com:user/dots.git # Clone existing
 ```
 
+#### `gdf init setup [flags]`
+
+Run first-run setup with profile/app bootstrap.
+
+| Flag | Description |
+| ---- | ----------- |
+| `-p, --profile <profile>` | Profile to bootstrap (default: `default`) |
+| `--apps <csv>` | Comma-separated starter apps to create/add |
+| `--json` | Output setup summary as JSON |
+
+```bash
+gdf init setup
+gdf init setup --profile work --apps git,kubectl --json
+```
+
 ---
 
 ### App Management
@@ -63,14 +78,12 @@ Add an app bundle to a profile.
 | Flag                      | Description                         |
 | ------------------------- | ----------------------------------- |
 | `-p, --profile <profile>` | Target profile (default: `default`) |
-| `--with <companions>`     | Include companion apps              |
-| `--track <path>`          | Track config file                   |
-| `--aliases`               | Include suggested aliases           |
 | `--from-recipe`           | Use built-in recipe                 |
+| `--interactive`           | Show recipe suggestions and dependency prompts |
 
 ```bash
 gdf app add kubectl -p sre
-gdf app add kubectl --with kubectx,kubens --aliases
+gdf app add backend-dev --from-recipe --interactive
 ```
 
 #### `gdf app remove <app> [flags]`
@@ -169,11 +182,35 @@ Track existing dotfile and associate with an app.
 | ----------------- | ------------------------------ |
 | `-a, --app <app>` | App bundle to add this file to |
 | `--secret`        | Mark file as secret (add to .gitignore) |
+| `--interactive`   | Preview and resolve target/path conflicts interactively |
 
 ```bash
 gdf app track ~/.kube/config -a kubectl
 gdf app track ~/.gitconfig -a git
 gdf app track ~/.aws/config -a aws-cli --secret
+```
+
+#### `gdf app import [paths...] [flags]`
+
+Discover and adopt existing dotfiles, aliases, and common tool configs.
+
+Import modes:
+- `--preview`: preview-only discovery
+- guided mapping (default in interactive terminals)
+- `--apply`: apply import directly
+
+| Flag | Description |
+| ---- | ----------- |
+| `--preview` | Preview discovered items without importing |
+| `--apply` | Apply import directly |
+| `--json` | Output preview/result as JSON |
+| `-p, --profile <profile>` | Profile to add imported apps to (default: `default`) |
+| `--sensitive-handling <ignore|secret|plain>` | Required in `--apply` mode when sensitive files are detected |
+
+```bash
+gdf app import --preview
+gdf app import                    # guided mapping
+gdf app import --apply --sensitive-handling secret
 ```
 
 ---

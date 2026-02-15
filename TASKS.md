@@ -18,17 +18,6 @@ For 1.0 prioritization:
 
 ## Priority 2: Post-1.0 Adoption and Reproducibility (1.1+)
 
-### 2.1 Onboarding and Migration
-- [ ] Implement interactive setup as `gdf init setup` (or equivalent grouped flow) for first-run profile/app/bootstrap
-- [ ] Add conflict-resolution UI with explicit, auditable decisions
-- [ ] Implement `gdf app import` to discover and adopt existing dotfiles, aliases, and common tool configs
-- [ ] Add import modes: preview-only, guided mapping, and apply
-- [ ] Add secret-aware import flow (detect likely sensitive paths and require explicit handling choice)
-
-### 2.2 Interactive Authoring
-- [ ] Add interactive mode to `gdf app add` with recipe suggestions and dependency awareness
-- [ ] Add interactive mode to `gdf app track` with target/path conflict previews
-
 ### 2.3 Reproducible Environments and Secrets
 - [ ] Implement lock file support for resolved package sources/versions per platform
 - [ ] Add lock refresh and verification workflow integrated with `apply` and CI checks

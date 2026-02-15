@@ -109,7 +109,7 @@ func TestCommandHierarchy_GroupsAppAndRecover(t *testing.T) {
 		t.Fatal("expected top-level 'recover' command")
 	}
 
-	for _, name := range []string{"add", "remove", "list", "install", "track", "move", "library"} {
+	for _, name := range []string{"add", "remove", "list", "install", "track", "move", "library", "import"} {
 		if findSubcommand(app, name) == nil {
 			t.Fatalf("expected 'gdf app %s' command", name)
 		}
@@ -123,7 +123,7 @@ func TestCommandHierarchy_GroupsAppAndRecover(t *testing.T) {
 }
 
 func TestCommandHierarchy_RemovesOldTopLevelCommands(t *testing.T) {
-	for _, name := range []string{"add", "remove", "list", "install", "track", "move", "library", "rollback", "restore"} {
+	for _, name := range []string{"add", "remove", "list", "install", "track", "move", "library", "import", "rollback", "restore"} {
 		if findSubcommand(rootCmd, name) != nil {
 			t.Fatalf("did not expect top-level '%s' command after regrouping", name)
 		}
