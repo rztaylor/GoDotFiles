@@ -68,7 +68,7 @@ func TestRunAppImport_ApplyRequiresSensitiveHandling(t *testing.T) {
 	defer restoreImportFlags(old)
 	importApply = true
 	importPreview = false
-	importProfile = "default"
+	importProfile = ""
 	importSensitiveHandling = ""
 
 	err := runAppImport(nil, []string{sensitive})
@@ -100,7 +100,7 @@ func TestRunAppImport_ApplySecretAndAlias(t *testing.T) {
 	defer restoreImportFlags(old)
 	importApply = true
 	importPreview = false
-	importProfile = "default"
+	importProfile = ""
 	importSensitiveHandling = "secret"
 
 	if err := runAppImport(nil, []string{sensitive}); err != nil {

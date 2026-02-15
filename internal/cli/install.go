@@ -33,27 +33,28 @@ func init() {
 	appCmd.AddCommand(installCmd)
 	installCmd.Flags().StringVar(&installPackage, "package", "", "Specify package name manually")
 	installCmd.Flags().StringVar(&installScript, "script", "", "Specify custom install script manually")
-	installCmd.Flags().StringVarP(&installProfile, "profile", "p", "default", "Profile to add app to")
+	installCmd.Flags().StringVarP(&installProfile, "profile", "p", "", "Profile to add app to")
 }
 
 func runInstall(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	gdfDir := platform.ConfigDir()
+	profileName, err := resolveProfileSelection(gdfDir, installProfile)
+	if err != nil {
+		return err
+	}
 	plat := platform.Detect()
 	pkgMgr := packages.ForPlatform(plat)
 
 	// 1. Load or Create App Bundle
 	appPath := filepath.Join(gdfDir, "apps", appName+".yaml")
 	var bundle *apps.Bundle
-	var isNewApp bool
-
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
 		fmt.Printf("App '%s' not found, creating new bundle...\n", appName)
 		bundle = &apps.Bundle{
 			Name:        appName,
 			Description: fmt.Sprintf("App bundle for %s", appName),
 		}
-		isNewApp = true
 	} else {
 		var err error
 		bundle, err = apps.Load(appPath)
@@ -62,9 +63,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 2. Check Profile Association
-	// We want to ensure the app is in at least one profile, unless user explicitly skips via interactive prompt.
-	if err := ensureAppInProfile(gdfDir, appName, installProfile, isNewApp); err != nil {
+	// 2. Check profile association.
+	if err := ensureAppInProfile(gdfDir, appName, profileName); err != nil {
 		return err
 	}
 
@@ -163,12 +163,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func ensureAppInProfile(gdfDir, appName, requestedProfile string, isNewApp bool) error {
-	// If specific profile requested, add to it
-	if requestedProfile != "" {
-		return addAppToProfile(gdfDir, requestedProfile, appName)
-	}
-
+func ensureAppInProfile(gdfDir, appName, selectedProfile string) error {
 	// Check if already in any profile
 	profilesDir := filepath.Join(gdfDir, "profiles")
 	// If profiles dir doesn't exist, we definitely need to add it
@@ -185,62 +180,6 @@ func ensureAppInProfile(gdfDir, appName, requestedProfile string, isNewApp bool)
 				return nil
 			}
 		}
-	}
-
-	// Not in any profile. Prompt user.
-	fmt.Printf("⚠️  App '%s' is not in any profile.\n", appName)
-
-	// List existing profiles
-	allProfiles, _ := config.LoadAllProfiles(profilesDir) // reload ignoring error
-	var choices []string
-	for _, p := range allProfiles {
-		choices = append(choices, p.Name)
-	}
-
-	fmt.Println("Select a profile to add it to:")
-	for i, name := range choices {
-		fmt.Printf("   %d. %s\n", i+1, name)
-	}
-	fmt.Printf("   %d. Create new profile...\n", len(choices)+1)
-	fmt.Printf("   %d. Skip (leave orphaned)\n", len(choices)+2)
-
-	input, err := readInteractiveLine("Select: ")
-	if err != nil {
-		return err
-	}
-	input = strings.TrimSpace(input)
-
-	var selectedProfile string
-
-	// Parse selection
-	// TODO: Handle numeric selection robustly. For now assume valid input or fall through.
-	// Simplified: if input matches a number, map to choice.
-
-	var selection int
-	_, err = fmt.Sscanf(input, "%d", &selection)
-	if err == nil {
-		if selection > 0 && selection <= len(choices) {
-			selectedProfile = choices[selection-1]
-		} else if selection == len(choices)+1 {
-			// Create new
-			newName, err := readInteractiveLine("Enter name for new profile: ")
-			if err != nil {
-				return err
-			}
-			selectedProfile = strings.TrimSpace(newName)
-			if selectedProfile == "" {
-				return fmt.Errorf("profile name cannot be empty")
-			}
-		} else {
-			// Skip
-			return nil
-		}
-	} else {
-		// Treat as profile name if not a number? Or just invalid.
-		// For MVP, if they type the name exact, use it?
-		// Let's stick to prompt logic above.
-		fmt.Println("Invalid selection. Skipping profile association.")
-		return nil
 	}
 
 	return addAppToProfile(gdfDir, selectedProfile, appName)

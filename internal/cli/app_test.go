@@ -74,6 +74,37 @@ func TestAddApp(t *testing.T) {
 	}
 }
 
+func TestAddAppCreatesAppsDirectoryWhenMissing(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(gdfDir, "apps")); err != nil {
+		t.Fatalf("removing apps dir: %v", err)
+	}
+
+	oldProfile := targetProfile
+	oldFromRecipe := fromRecipe
+	targetProfile = "base"
+	fromRecipe = true
+	defer func() {
+		targetProfile = oldProfile
+		fromRecipe = oldFromRecipe
+	}()
+
+	if err := runAdd(nil, []string{"git"}); err != nil {
+		t.Fatalf("runAdd() error = %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(gdfDir, "apps", "git.yaml")); err != nil {
+		t.Fatalf("expected git app bundle to be created: %v", err)
+	}
+}
+
 func TestRemoveApp(t *testing.T) {
 	tmpDir := t.TempDir()
 	gdfDir := filepath.Join(tmpDir, ".gdf")

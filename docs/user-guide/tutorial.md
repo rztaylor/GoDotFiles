@@ -162,6 +162,11 @@ gdf app add git -p base
 gdf app track ~/.gitconfig -a git
 ```
 
+If you omit `--profile` on profile-dependent commands, GDF now resolves it as follows:
+- no profiles: returns an error
+- one profile: selects it automatically
+- multiple profiles: prompts you to choose
+
 What this does:
 1. Creates/updates the `git` app bundle.
 2. Moves your managed copy into `~/.gdf/dotfiles/git/.gitconfig`.

@@ -113,7 +113,7 @@ func runInitSetup(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, appName := range appNames {
-		if err := ensureProfileHasApp(gdfDir, profileName, appName); err != nil {
+		if err := addAppToProfile(gdfDir, profileName, appName); err != nil {
 			return err
 		}
 		appPath := filepath.Join(gdfDir, "apps", appName+".yaml")

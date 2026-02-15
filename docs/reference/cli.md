@@ -79,7 +79,7 @@ Add an app bundle to a profile.
 
 | Flag                      | Description                         |
 | ------------------------- | ----------------------------------- |
-| `-p, --profile <profile>` | Target profile (default: `default`) |
+| `-p, --profile <profile>` | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
 | `--from-recipe`           | Use built-in recipe                 |
 | `--interactive`           | Show recipe suggestions and dependency prompts |
 
@@ -94,7 +94,7 @@ Remove an app bundle from a profile.
 
 | Flag                      | Description                         |
 | ------------------------- | ----------------------------------- |
-| `-p, --profile <profile>` | Target profile (default: `default`) |
+| `-p, --profile <profile>` | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
 | `--uninstall`             | Unlink managed dotfiles and uninstall package only when no profiles still reference the app |
 | `--dry-run`               | Preview removal actions without writing changes |
 | `--yes`                   | Skip uninstall/unlink confirmation prompt |
@@ -108,7 +108,7 @@ List apps in a profile.
 
 | Flag                      | Description                                    |
 | ------------------------- | ---------------------------------------------- |
-| `-p, --profile <profile>` | Profile to list apps from (default: `default`) |
+| `-p, --profile <profile>` | Profile to list apps from (if omitted: auto-select one profile, or prompt when multiple) |
 
 #### `gdf app prune [flags]`
 
@@ -145,14 +145,14 @@ gdf app library describe git
 
 #### `gdf app move <app-pattern> [flags]`
  
-Move apps between profiles. At least one of `--from` or `--to` must be specified. If one is omitted, it defaults to `default`.
+Move apps between profiles. At least one of `--from` or `--to` must be specified. If one side is omitted, GDF resolves it using existing profiles.
  
 Supports wildcard patterns (e.g. `gnome-*`, `*`).
  
 | Flag               | Description                         |
 | ------------------ | ----------------------------------- |
-| `--from <profile>` | Source profile (default: `default`) |
-| `--to <profile>`   | Target profile (default: `default`) |
+| `--from <profile>` | Source profile (if omitted: auto-select one profile, or prompt when multiple) |
+| `--to <profile>`   | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
  
 ```bash
 gdf app move git --from work --to home
@@ -164,12 +164,12 @@ gdf app move --from old-work --to work # Move all apps
 
 Install an app directly. if the app is not defined or the installation method is unknown for the current OS, it will prompt to learn the package details.
 
-If the app is not part of any profile, it will be added to the `default` profile (unless `--profile` is specified).
+If `--profile` is omitted, GDF selects a profile automatically when exactly one exists, or prompts you when multiple profiles exist.
 
 | Flag        | Description                                  |
 | ----------- | -------------------------------------------- |
 | `--package` | Specify package name manually (skips prompt) |
-| `-p, --profile <profile>` | Profile to add app to (default: `default`) |
+| `-p, --profile <profile>` | Profile to add app to (if omitted: auto-select one profile, or prompt when multiple) |
 
 ```bash
 gdf app install ripgrep
@@ -206,7 +206,7 @@ Import modes:
 | `--preview` | Preview discovered items without importing |
 | `--apply` | Apply import directly |
 | `--json` | Output preview/result as JSON |
-| `-p, --profile <profile>` | Profile to add imported apps to (default: `default`) |
+| `-p, --profile <profile>` | Profile to add imported apps to (if omitted: auto-select one profile, or prompt when multiple) |
 | `--sensitive-handling <ignore|secret|plain>` | Required in `--apply` mode when sensitive files are detected |
 
 ```bash

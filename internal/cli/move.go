@@ -16,7 +16,7 @@ var moveCmd = &cobra.Command{
 	Long: `Move apps matching a pattern from one profile to another.
 	
 At least one of --from or --to must be specified. 
-If one is omitted, it defaults to 'default'.`,
+If one is omitted, GDF selects the profile automatically when possible.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runMove,
 }
@@ -45,10 +45,18 @@ func runMove(cmd *cobra.Command, args []string) error {
 	}
 
 	if from == "" {
-		from = "default"
+		resolvedFrom, err := resolveProfileSelection(gdfDir, from)
+		if err != nil {
+			return err
+		}
+		from = resolvedFrom
 	}
 	if to == "" {
-		to = "default"
+		resolvedTo, err := resolveProfileSelection(gdfDir, to)
+		if err != nil {
+			return err
+		}
+		to = resolvedTo
 	}
 
 	if from == to {

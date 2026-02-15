@@ -103,41 +103,43 @@ func TestMoveApps(t *testing.T) {
 		}
 	})
 
-	t.Run("move default inference from", func(t *testing.T) {
-		// To specified, From empty -> From=default
-		createProfile("default", []string{"appA"})
+	t.Run("move omitted from with multiple profiles in non-interactive mode", func(t *testing.T) {
+		createProfile("source_def", []string{"appA"})
 		createProfile("target_def", []string{})
+
+		oldNonInteractive := globalNonInteractive
+		globalNonInteractive = true
+		defer func() { globalNonInteractive = oldNonInteractive }()
 
 		moveFromProfile = ""
 		moveToProfile = "target_def"
 
 		err := runMove(nil, []string{"appA"})
-		if err != nil {
-			t.Errorf("runMove() error = %v", err)
+		if err == nil {
+			t.Fatal("expected error, got nil")
 		}
-
-		target, _ := config.LoadProfile(filepath.Join(gdfDir, "profiles", "target_def", "profile.yaml"))
-		if len(target.Apps) != 1 || target.Apps[0] != "appA" {
-			t.Errorf("appA not moved to target: %v", target.Apps)
+		if ExitCode(err) != exitCodeNonInteractiveStop {
+			t.Fatalf("ExitCode(err) = %d, want %d", ExitCode(err), exitCodeNonInteractiveStop)
 		}
 	})
 
-	t.Run("move default inference to", func(t *testing.T) {
-		// From specified, To empty -> To=default
-		createProfile("default", []string{})
+	t.Run("move omitted to with multiple profiles in non-interactive mode", func(t *testing.T) {
 		createProfile("source_def", []string{"appB"})
+		createProfile("target_def", []string{})
+
+		oldNonInteractive := globalNonInteractive
+		globalNonInteractive = true
+		defer func() { globalNonInteractive = oldNonInteractive }()
 
 		moveFromProfile = "source_def"
 		moveToProfile = ""
 
 		err := runMove(nil, []string{"appB"})
-		if err != nil {
-			t.Errorf("runMove() error = %v", err)
+		if err == nil {
+			t.Fatal("expected error, got nil")
 		}
-
-		def, _ := config.LoadProfile(filepath.Join(gdfDir, "profiles", "default", "profile.yaml"))
-		if len(def.Apps) != 1 || def.Apps[0] != "appB" {
-			t.Errorf("appB not moved to default: %v", def.Apps)
+		if ExitCode(err) != exitCodeNonInteractiveStop {
+			t.Fatalf("ExitCode(err) = %d, want %d", ExitCode(err), exitCodeNonInteractiveStop)
 		}
 	})
 }

@@ -52,9 +52,9 @@ func TestInstall_Learning(t *testing.T) {
 		w.Write([]byte("my-pkg-name\n")) // Pkg Name
 	}()
 
-	// Reset installProfile global
-	installProfile = "default"             // Cobra default
-	defer func() { installProfile = "" }() // Reset after test
+	// Reset installProfile global.
+	installProfile = ""
+	defer func() { installProfile = "" }()
 
 	// Override platform to ensure deterministic behavior (simulate Linux)
 	platform.Override = &platform.Platform{
@@ -90,8 +90,8 @@ func TestInstall_Learning(t *testing.T) {
 		}
 	}
 
-	// Verify profile was created and app added
-	// Verify profile was created and app added to DEFAULT
+	// Verify profile was created and app added.
+	// The repo has a single profile by default, so omitted --profile resolves to that profile.
 	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
 	assert.FileExists(t, profilePath)
 

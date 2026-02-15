@@ -244,6 +244,18 @@ func TestProfileShow(t *testing.T) {
 		}
 		createProfile("default")
 
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatal(err)
+		}
+		oldStdin := os.Stdin
+		os.Stdin = r
+		defer func() { os.Stdin = oldStdin }()
+		if _, err := w.Write([]byte("1\n")); err != nil {
+			t.Fatal(err)
+		}
+		_ = w.Close()
+
 		if err := runProfileShow(nil, []string{}); err != nil {
 			t.Errorf("runProfileShow(no args) error = %v", err)
 		}

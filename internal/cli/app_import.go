@@ -3,7 +3,6 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
-	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/spf13/cobra"
 )
@@ -60,7 +58,7 @@ func init() {
 	importCmd.Flags().BoolVar(&importPreview, "preview", false, "Preview discoveries without importing")
 	importCmd.Flags().BoolVar(&importApply, "apply", false, "Apply import directly without guided mapping")
 	importCmd.Flags().BoolVar(&importJSON, "json", false, "Output discovery/import data as JSON")
-	importCmd.Flags().StringVarP(&importProfile, "profile", "p", "default", "Profile to add imported apps to")
+	importCmd.Flags().StringVarP(&importProfile, "profile", "p", "", "Profile to add imported apps to")
 	importCmd.Flags().StringVar(&importSensitiveHandling, "sensitive-handling", "", "Default handling for sensitive files in apply mode: ignore|secret|plain")
 }
 
@@ -78,6 +76,11 @@ func runAppImport(cmd *cobra.Command, args []string) error {
 
 	if mode == "guided" && globalNonInteractive {
 		return withExitCode(fmt.Errorf("guided import requires interactive input; use --preview or --apply"), exitCodeNonInteractiveStop)
+	}
+
+	profileName, err := resolveProfileSelection(platform.ConfigDir(), importProfile)
+	if err != nil {
+		return err
 	}
 
 	home := platform.Detect().Home
@@ -169,7 +172,7 @@ func runAppImport(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		if err := ensureProfileHasApp(platform.ConfigDir(), importProfile, selectedApp); err != nil {
+		if err := addAppToProfile(platform.ConfigDir(), profileName, selectedApp); err != nil {
 			return err
 		}
 
@@ -363,31 +366,6 @@ func looksSensitivePath(path string) bool {
 		return true
 	}
 	return false
-}
-
-func ensureProfileHasApp(gdfDir, profileName, appName string) error {
-	profileDir := filepath.Join(gdfDir, "profiles", profileName)
-	if err := os.MkdirAll(profileDir, 0755); err != nil {
-		return fmt.Errorf("creating profile directory: %w", err)
-	}
-	profilePath := filepath.Join(profileDir, "profile.yaml")
-
-	profile, err := config.LoadProfile(profilePath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			profile = &config.Profile{Name: profileName}
-		} else {
-			return fmt.Errorf("loading profile: %w", err)
-		}
-	}
-
-	if !contains(profile.Apps, appName) {
-		profile.Apps = append(profile.Apps, appName)
-		if err := profile.Save(profilePath); err != nil {
-			return fmt.Errorf("saving profile: %w", err)
-		}
-	}
-	return nil
 }
 
 func importAliasCandidateEntry(candidate importAliasCandidate) error {

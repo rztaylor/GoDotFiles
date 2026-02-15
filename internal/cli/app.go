@@ -22,7 +22,7 @@ var addCmd = &cobra.Command{
 	Long: `Add an app bundle to a profile.
 
 If the app definition (apps/<app>.yaml) does not exist, it will be created.
-By default, the app is added to the 'default' profile. Use --profile to specify a different profile.`,
+If --profile is omitted, GDF selects the profile automatically when possible.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAdd,
 }
@@ -76,14 +76,14 @@ func init() {
 	appCmd.AddCommand(pruneCmd)
 	appCmd.AddCommand(libraryCmd)
 
-	addCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to add app to")
+	addCmd.Flags().StringVarP(&targetProfile, "profile", "p", "", "Profile to add app to")
 	addCmd.Flags().BoolVar(&fromRecipe, "from-recipe", false, "Use library recipe without prompting")
 	addCmd.Flags().BoolVar(&addInteractive, "interactive", false, "Enable interactive recipe suggestions and dependency prompts")
-	removeCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to remove app from")
+	removeCmd.Flags().StringVarP(&targetProfile, "profile", "p", "", "Profile to remove app from")
 	removeCmd.Flags().BoolVar(&removeUninstall, "uninstall", false, "Also unlink managed dotfiles and uninstall the app package when no profiles reference the app")
 	removeCmd.Flags().BoolVar(&removeDryRun, "dry-run", false, "Preview removal actions without making changes")
 	removeCmd.Flags().BoolVar(&removeYes, "yes", false, "Skip confirmation prompt for uninstall/unlink cleanup")
-	listCmd.Flags().StringVarP(&targetProfile, "profile", "p", "default", "Profile to list apps from")
+	listCmd.Flags().StringVarP(&targetProfile, "profile", "p", "", "Profile to list apps from")
 	pruneCmd.Flags().BoolVar(&pruneDryRun, "dry-run", false, "Preview prune actions without making changes")
 	pruneCmd.Flags().BoolVar(&pruneDelete, "delete", false, "Permanently delete orphaned app definitions instead of archiving them")
 	pruneCmd.Flags().BoolVar(&pruneJSON, "json", false, "Output prune results as JSON")
@@ -93,6 +93,10 @@ func init() {
 func runAdd(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	gdfDir := platform.ConfigDir()
+	profileName, err := resolveProfileSelection(gdfDir, targetProfile)
+	if err != nil {
+		return err
+	}
 	if addInteractive {
 		if err := maybeSuggestRecipes(appName); err != nil {
 			return err
@@ -100,7 +104,11 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// 1. Check/Create app definition
-	appPath := filepath.Join(gdfDir, "apps", appName+".yaml")
+	appsDir := filepath.Join(gdfDir, "apps")
+	if err := os.MkdirAll(appsDir, 0755); err != nil {
+		return fmt.Errorf("creating apps directory: %w", err)
+	}
+	appPath := filepath.Join(appsDir, appName+".yaml")
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
 		// Check for recipe
 		mgr := library.New()
@@ -127,7 +135,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("saving app bundle: %w", err)
 			}
 			if addInteractive {
-				if err := maybeIncludeRecipeDependencies(bundle, targetProfile, gdfDir); err != nil {
+				if err := maybeIncludeRecipeDependencies(bundle, profileName, gdfDir); err != nil {
 					return err
 				}
 			}
@@ -157,7 +165,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// 2. Load profile
-	profileDir := filepath.Join(gdfDir, "profiles", targetProfile)
+	profileDir := filepath.Join(gdfDir, "profiles", profileName)
 	if err := os.MkdirAll(profileDir, 0755); err != nil {
 		return fmt.Errorf("creating profile directory: %w", err)
 	}
@@ -167,7 +175,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// Create new profile if it doesn't exist
-			profile = &config.Profile{Name: targetProfile}
+			profile = &config.Profile{Name: profileName}
 		} else {
 			return fmt.Errorf("loading profile: %w", err)
 		}
@@ -175,7 +183,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 
 	// 3. Add app to profile
 	if contains(profile.Apps, appName) {
-		fmt.Printf("App '%s' is already in profile '%s'\n", appName, targetProfile)
+		fmt.Printf("App '%s' is already in profile '%s'\n", appName, profileName)
 		return nil
 	}
 
@@ -186,7 +194,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("saving profile: %w", err)
 	}
 
-	fmt.Printf("✓ Added '%s' to profile '%s'\n", appName, targetProfile)
+	fmt.Printf("✓ Added '%s' to profile '%s'\n", appName, profileName)
 	return nil
 }
 
@@ -240,9 +248,13 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	gdfDir := platform.ConfigDir()
 	plat := platform.Detect()
+	profileName, err := resolveProfileSelection(gdfDir, targetProfile)
+	if err != nil {
+		return err
+	}
 
 	// Load profile
-	profilePath := filepath.Join(gdfDir, "profiles", targetProfile, "profile.yaml")
+	profilePath := filepath.Join(gdfDir, "profiles", profileName, "profile.yaml")
 	profile, err := config.LoadProfile(profilePath)
 	if err != nil {
 		return fmt.Errorf("loading profile: %w", err)
@@ -260,13 +272,13 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	if !found {
-		fmt.Printf("App '%s' is not in profile '%s'\n", appName, targetProfile)
+		fmt.Printf("App '%s' is not in profile '%s'\n", appName, profileName)
 		return nil
 	}
 
 	profile.Apps = newApps
 
-	removePlan, err := buildAppRemovalPlan(gdfDir, appName, targetProfile, newApps, plat, removeUninstall)
+	removePlan, err := buildAppRemovalPlan(gdfDir, appName, profileName, newApps, plat, removeUninstall)
 	if err != nil {
 		return err
 	}
@@ -293,7 +305,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("saving profile: %w", err)
 	}
 
-	fmt.Printf("✓ Removed '%s' from profile '%s'\n", appName, targetProfile)
+	fmt.Printf("✓ Removed '%s' from profile '%s'\n", appName, profileName)
 
 	if err := executeAppRemovalCleanup(gdfDir, appName, removePlan); err != nil {
 		return err
@@ -305,14 +317,18 @@ func runRemove(cmd *cobra.Command, args []string) error {
 
 func runList(cmd *cobra.Command, args []string) error {
 	gdfDir := platform.ConfigDir()
-	profilePath := filepath.Join(gdfDir, "profiles", targetProfile, "profile.yaml")
+	profileName, err := resolveProfileSelection(gdfDir, targetProfile)
+	if err != nil {
+		return err
+	}
+	profilePath := filepath.Join(gdfDir, "profiles", profileName, "profile.yaml")
 
 	profile, err := config.LoadProfile(profilePath)
 	if err != nil {
 		return fmt.Errorf("loading profile: %w", err)
 	}
 
-	fmt.Printf("Apps in profile '%s':\n", targetProfile)
+	fmt.Printf("Apps in profile '%s':\n", profileName)
 	if len(profile.Apps) == 0 {
 		fmt.Println("  (none)")
 		return nil

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- Stop assuming a `default` profile for profile-dependent app workflows (`app add/remove/list/install/import/move` and `profile show`) when `--profile` is omitted. GDF now errors when no profiles exist, auto-selects when exactly one exists, and prompts when multiple exist.
+- Create the `apps/` directory on demand during `gdf app add` so adding a recipe or new app succeeds even when the directory is missing.
+
 ## [1.1.0] - 2026-02-15
 
 ### Added

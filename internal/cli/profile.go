@@ -39,7 +39,7 @@ var profileListCmd = &cobra.Command{
 }
 
 var profileShowCmd = &cobra.Command{
-	Use:   "show <name>",
+	Use:   "show [name]",
 	Short: "Show profile details",
 	Long:  `Display detailed information about a specific profile, including apps and includes.`,
 	Args:  cobra.MaximumNArgs(1),
@@ -168,11 +168,15 @@ func runProfileList(cmd *cobra.Command, args []string) error {
 }
 
 func runProfileShow(cmd *cobra.Command, args []string) error {
-	profileName := "default"
-	if len(args) > 0 {
-		profileName = args[0]
-	}
 	gdfDir := platform.ConfigDir()
+	var requested string
+	if len(args) > 0 {
+		requested = args[0]
+	}
+	profileName, err := resolveProfileSelection(gdfDir, requested)
+	if err != nil {
+		return err
+	}
 
 	// Load profile
 	profilePath := filepath.Join(gdfDir, "profiles", profileName, "profile.yaml")
