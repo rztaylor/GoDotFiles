@@ -7,5 +7,7 @@ package:
     name: fd-find
   dnf: fd-find
 shell:
-  aliases:
-    fd: fdfind
+  init:
+    - name: fd-find-compat-alias
+      common: "alias fd='fdfind'"
+      guard: command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1

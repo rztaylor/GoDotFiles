@@ -1,0 +1,31 @@
+kind: Recipe/v1
+name: oh-my-zsh
+description: Framework for managing your Zsh configuration
+dependencies:
+  - zsh
+  - git
+package:
+  brew: oh-my-zsh
+  apt:
+    name: oh-my-zsh
+  dnf: oh-my-zsh
+  custom:
+    script: |
+      if [ -d "$HOME/.oh-my-zsh" ]; then
+        echo "oh-my-zsh is already installed."
+        exit 0
+      fi
+      git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"
+    sudo: false
+    confirm: true
+dotfiles:
+  - source: zshrc
+    target: .zshrc
+  - source: oh-my-zsh/custom/aliases.zsh
+    target: .oh-my-zsh/custom/aliases.zsh
+  - source: oh-my-zsh/custom/functions.zsh
+    target: .oh-my-zsh/custom/functions.zsh
+shell:
+  aliases:
+    omz-upgrade: "$HOME/.oh-my-zsh/tools/upgrade.sh"
+    omz-reload: "exec zsh -l"

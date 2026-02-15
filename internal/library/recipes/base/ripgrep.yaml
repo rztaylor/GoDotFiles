@@ -6,3 +6,6 @@ package:
   apt:
     name: ripgrep
   dnf: ripgrep
+dotfiles:
+  - source: ripgreprc
+    target: .ripgreprc

@@ -12,4 +12,6 @@ dotfiles:
 shell:
   aliases:
     j: just
-
+  completions:
+    bash: just --completions bash
+    zsh: just --completions zsh

@@ -6,3 +6,6 @@ package:
   apt:
     name: btop
   dnf: btop
+dotfiles:
+  - source: btop/btop.conf
+    target: .config/btop/btop.conf

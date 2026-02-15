@@ -6,3 +6,6 @@ package:
   apt:
     name: wget
   dnf: wget
+dotfiles:
+  - source: wgetrc
+    target: .wgetrc

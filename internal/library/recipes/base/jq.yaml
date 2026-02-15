@@ -6,3 +6,6 @@ package:
   apt:
     name: jq
   dnf: jq
+dotfiles:
+  - source: jq
+    target: .jq

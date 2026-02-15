@@ -6,6 +6,9 @@ package:
   apt:
     name: golang-go
   dnf: golang
+dotfiles:
+  - source: go/env
+    target: .config/go/env
 shell:
   aliases:
     g: go
@@ -13,4 +16,3 @@ shell:
     gr: go run .
     gmo: go mod tidy
     gmt: go mod tidy
-

@@ -134,6 +134,9 @@ func runAdd(cmd *cobra.Command, args []string) error {
 			if err := bundle.Save(appPath); err != nil {
 				return fmt.Errorf("saving app bundle: %w", err)
 			}
+			if err := ensureRecipeDotfileSources(gdfDir, bundle); err != nil {
+				return fmt.Errorf("initializing recipe dotfile sources: %w", err)
+			}
 			if addInteractive {
 				if err := maybeIncludeRecipeDependencies(bundle, profileName, gdfDir); err != nil {
 					return err
@@ -346,6 +349,46 @@ func createAppSkeleton(name, path string) error {
 		Description: fmt.Sprintf("App bundle for %s", name),
 	}
 	return bundle.Save(path)
+}
+
+func ensureRecipeDotfileSources(gdfDir string, bundle *apps.Bundle) error {
+	if bundle == nil {
+		return nil
+	}
+
+	for _, dotfile := range bundle.Dotfiles {
+		if dotfile.Source == "" {
+			continue
+		}
+
+		sourcePath := filepath.Join(gdfDir, "dotfiles", dotfile.Source)
+		if _, err := os.Stat(sourcePath); err == nil {
+			continue
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("checking source %s: %w", dotfile.Source, err)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(sourcePath), 0755); err != nil {
+			return fmt.Errorf("creating source directory for %s: %w", dotfile.Source, err)
+		}
+		if err := os.WriteFile(sourcePath, []byte(recipeDotfilePlaceholder(bundle.Name, dotfile.Source)), 0644); err != nil {
+			return fmt.Errorf("writing placeholder source %s: %w", dotfile.Source, err)
+		}
+	}
+
+	return nil
+}
+
+func recipeDotfilePlaceholder(appName, source string) string {
+	trimmed := strings.TrimSpace(strings.ToLower(source))
+	switch {
+	case strings.HasSuffix(trimmed, ".json"):
+		return "{\n}\n"
+	case strings.HasSuffix(trimmed, ".lua"):
+		return fmt.Sprintf("-- Managed by gdf recipe '%s'\n", appName)
+	default:
+		return fmt.Sprintf("# Managed by gdf recipe '%s'\n", appName)
+	}
 }
 
 // AppName sanitizes an app name for use as a filename/identifier.

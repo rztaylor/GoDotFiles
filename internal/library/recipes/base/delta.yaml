@@ -6,3 +6,6 @@ package:
   apt:
     name: git-delta
   dnf: git-delta
+dotfiles:
+  - source: delta/config
+    target: .config/delta/config

@@ -6,7 +6,6 @@ package:
   apt:
     name: git
   dnf: git
-shell:
-  completions:
-    bash: git completion bash
-    zsh: git completion zsh
+dotfiles:
+  - source: gitconfig
+    target: .gitconfig

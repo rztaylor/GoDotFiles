@@ -6,6 +6,9 @@ package:
   apt:
     name: direnv
   dnf: direnv
+dotfiles:
+  - source: direnv/direnvrc
+    target: .config/direnv/direnvrc
 shell:
   init:
     - name: direnv-hook

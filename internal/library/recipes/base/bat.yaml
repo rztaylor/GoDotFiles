@@ -6,3 +6,6 @@ package:
   apt:
     name: bat
   dnf: bat
+dotfiles:
+  - source: bat/config
+    target: .config/bat/config

@@ -105,6 +105,88 @@ func TestAddAppCreatesAppsDirectoryWhenMissing(t *testing.T) {
 	}
 }
 
+func TestAddAppFromRecipeSeedsDotfileSources(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	oldProfile := targetProfile
+	oldFromRecipe := fromRecipe
+	targetProfile = "default"
+	fromRecipe = true
+	defer func() {
+		targetProfile = oldProfile
+		fromRecipe = oldFromRecipe
+	}()
+
+	tests := []struct {
+		appName string
+		source  string
+		marker  string
+	}{
+		{appName: "git", source: "gitconfig", marker: "Managed by gdf recipe 'git'"},
+		{appName: "zsh", source: "zshrc", marker: "Managed by gdf recipe 'zsh'"},
+		{appName: "oh-my-zsh", source: "oh-my-zsh/custom/aliases.zsh", marker: "Managed by gdf recipe 'oh-my-zsh'"},
+	}
+
+	for _, tt := range tests {
+		if err := runAdd(nil, []string{tt.appName}); err != nil {
+			t.Fatalf("runAdd(%q) error = %v", tt.appName, err)
+		}
+		content, err := os.ReadFile(filepath.Join(gdfDir, "dotfiles", tt.source))
+		if err != nil {
+			t.Fatalf("expected seeded source for %q: %v", tt.appName, err)
+		}
+		if !strings.Contains(string(content), tt.marker) {
+			t.Fatalf("seeded source for %q missing marker %q", tt.appName, tt.marker)
+		}
+	}
+}
+
+func TestAddAppFromRecipeKeepsExistingDotfileSource(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	existingPath := filepath.Join(gdfDir, "dotfiles", "gitconfig")
+	if err := os.MkdirAll(filepath.Dir(existingPath), 0755); err != nil {
+		t.Fatalf("mkdir existing source dir: %v", err)
+	}
+	original := "user-owned git config"
+	if err := os.WriteFile(existingPath, []byte(original), 0644); err != nil {
+		t.Fatalf("writing existing source: %v", err)
+	}
+
+	oldProfile := targetProfile
+	oldFromRecipe := fromRecipe
+	targetProfile = "default"
+	fromRecipe = true
+	defer func() {
+		targetProfile = oldProfile
+		fromRecipe = oldFromRecipe
+	}()
+
+	if err := runAdd(nil, []string{"git"}); err != nil {
+		t.Fatalf("runAdd() error = %v", err)
+	}
+
+	content, err := os.ReadFile(existingPath)
+	if err != nil {
+		t.Fatalf("reading source after add: %v", err)
+	}
+	if string(content) != original {
+		t.Fatalf("expected existing source to remain unchanged, got %q", string(content))
+	}
+}
+
 func TestRemoveApp(t *testing.T) {
 	tmpDir := t.TempDir()
 	gdfDir := filepath.Join(tmpDir, ".gdf")

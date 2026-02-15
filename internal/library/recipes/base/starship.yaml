@@ -7,6 +7,9 @@ package:
   custom:
     script: curl -sS https://starship.rs/install.sh | sh
     sudo: true
+dotfiles:
+  - source: starship.toml
+    target: .config/starship.toml
 shell:
   init:
     - name: starship-init
