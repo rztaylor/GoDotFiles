@@ -338,6 +338,13 @@ This command performs the following operations:
 All operations are logged to `~/.gdf/.operations/<timestamp>.json`.
 Historical snapshots are stored in `~/.gdf/.history/` and retained with quota-based eviction.
 
+Package manager selection precedence for each app during apply:
+1. `apps/*.yaml -> package.prefer`
+2. `config.yaml -> package_manager.prefer`
+3. platform auto-detection
+
+When an app defines multiple package managers, GDF checks installed status across configured and available managers and skips reinstall when already satisfied.
+
 ```bash
 # Apply single profile
 gdf apply base

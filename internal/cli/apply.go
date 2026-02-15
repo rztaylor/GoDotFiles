@@ -12,7 +12,6 @@ import (
 	"github.com/rztaylor/GoDotFiles/internal/config"
 	"github.com/rztaylor/GoDotFiles/internal/engine"
 	"github.com/rztaylor/GoDotFiles/internal/library"
-	"github.com/rztaylor/GoDotFiles/internal/packages"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 	"github.com/rztaylor/GoDotFiles/internal/shell"
 	"github.com/rztaylor/GoDotFiles/internal/state"
@@ -232,7 +231,6 @@ func runApply(cmd *cobra.Command, args []string) error {
 	}
 
 	// Phase 5: Apply each app
-	pkgMgr := packages.ForPlatform(plat)
 	conflictStrategy := "error"
 	if cfg.ConflictResolution != nil {
 		conflictStrategy = cfg.ConflictResolution.DotfilesDefault()
@@ -245,27 +243,58 @@ func runApply(cmd *cobra.Command, args []string) error {
 
 		// 5a. Install package (if defined)
 		if bundle.Package != nil {
-			// Get package name using platform-specific resolution
-			pkgName, defined := bundle.Package.ResolveName(pkgMgr.Name())
-
-			// If not defined for this specific manager, check if we should fallback or skip
-			if !defined {
-				fmt.Printf("      ⚠️  App '%s' is not configured for package manager '%s'. Skipping package install.\n", bundle.Name, pkgMgr.Name())
+			plan := resolvePackageManagerPlan(bundle.Package, plat, cfg)
+			if plan == nil {
+				fmt.Printf("      ⚠️  App '%s' has no supported package manager configuration for this system. Skipping package install.\n", bundle.Name)
 				goto SkipPackageInstall
 			}
 
-			fmt.Printf("   Package: %s (via %s)\n", pkgName, pkgMgr.Name())
+			selected := plan.Selected
+			fmt.Printf("   Package: %s (via %s)\n", selected.PackageName, selected.Name)
 
-			if pkgMgr.Name() != "none" {
+			if selected.Name != "none" {
+				alreadyInstalled := false
+				detectedBy := ""
 				if !applyDryRun {
-					if err := pkgMgr.Install(pkgName); err != nil {
-						return fmt.Errorf("installing package %s: %w", pkgName, err)
+					for _, probe := range plan.Probes {
+						installed, checkErr := probe.Manager.IsInstalled(probe.PackageName)
+						if checkErr != nil {
+							fmt.Printf("      ⚠️  Could not verify install status for '%s' via %s: %v\n", probe.PackageName, probe.Name, checkErr)
+							continue
+						}
+						if installed {
+							alreadyInstalled = true
+							detectedBy = probe.Name
+							break
+						}
+					}
+					if alreadyInstalled {
+						if detectedBy != "" && detectedBy != selected.Name {
+							fmt.Printf("      ⏭️  Skipping install (already installed via %s)\n", detectedBy)
+						} else {
+							fmt.Printf("      ⏭️  Skipping install (already installed)\n")
+						}
 					}
 				}
-				logger.Log("package_install", pkgName, map[string]string{
-					"manager": pkgMgr.Name(),
-					"app":     bundle.Name,
-				})
+
+				if alreadyInstalled {
+					logger.Log("package_install_skipped", selected.PackageName, map[string]string{
+						"manager":          selected.Name,
+						"app":              bundle.Name,
+						"reason":           "already_installed",
+						"detected_manager": detectedBy,
+					})
+				} else {
+					if !applyDryRun {
+						if err := selected.Manager.Install(selected.PackageName); err != nil {
+							return fmt.Errorf("installing package %s: %w", selected.PackageName, err)
+						}
+					}
+					logger.Log("package_install", selected.PackageName, map[string]string{
+						"manager": selected.Name,
+						"app":     bundle.Name,
+					})
+				}
 			} else {
 				fmt.Printf("      ⏭️  Skipping (no package manager)\n")
 			}

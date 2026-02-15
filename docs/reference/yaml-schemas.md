@@ -387,6 +387,7 @@ package_manager:
   prefer:
     macos: brew
     linux: apt            # or dnf, pacman
+    wsl: apt              # optional WSL-specific override
     
 # Security settings
 security:
@@ -401,6 +402,11 @@ history:
 shell_integration:
   auto_reload_enabled: true | false   # Default: false (recommended true for interactive shells)
 ```
+
+Preference precedence during `gdf apply`:
+1. `package.prefer` in app bundle
+2. `package_manager.prefer` in global config
+3. platform auto-detection
 
 ---
 

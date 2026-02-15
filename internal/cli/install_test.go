@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -146,9 +147,15 @@ func TestInstall_WithProfileFlag(t *testing.T) {
 
 // MockPackageManager for testing
 type MockPackageManager struct {
-	mgrName     string
-	installed   []string
-	uninstalled []string
+	mgrName          string
+	installed        []string
+	uninstalled      []string
+	isInstalledErr   error
+	installErr       error
+	uninstallErr     error
+	installCalls     int
+	uninstallCalls   int
+	isInstalledCalls int
 }
 
 func (m *MockPackageManager) Name() string {
@@ -156,16 +163,31 @@ func (m *MockPackageManager) Name() string {
 }
 
 func (m *MockPackageManager) Install(pkg string) error {
+	m.installCalls++
+	if m.installErr != nil {
+		return m.installErr
+	}
 	m.installed = append(m.installed, pkg)
 	return nil
 }
 
 func (m *MockPackageManager) Uninstall(pkg string) error {
+	m.uninstallCalls++
+	if m.uninstallErr != nil {
+		return m.uninstallErr
+	}
 	m.uninstalled = append(m.uninstalled, pkg)
 	return nil
 }
 
 func (m *MockPackageManager) IsInstalled(pkg string) (bool, error) {
+	m.isInstalledCalls++
+	if m.isInstalledErr != nil {
+		return false, m.isInstalledErr
+	}
+	if pkg == "" {
+		return false, errors.New("package name cannot be empty")
+	}
 	for _, p := range m.installed {
 		if p == pkg {
 			return true, nil
