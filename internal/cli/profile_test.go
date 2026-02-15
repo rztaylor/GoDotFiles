@@ -317,6 +317,63 @@ func TestProfileShowWithConditions(t *testing.T) {
 	}
 }
 
+func TestProfileShow_PrintsAppCounters(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	t.Setenv("HOME", tmpDir)
+	configureGitUserGlobal(t, tmpDir)
+
+	if err := createNewRepo(gdfDir); err != nil {
+		t.Fatalf("createNewRepo() error = %v", err)
+	}
+
+	bundle := &apps.Bundle{
+		TypeMeta: schema.TypeMeta{Kind: "App/v1"},
+		Name:     "git",
+		Dotfiles: []apps.Dotfile{
+			{Source: "git/config", Target: "~/.gitconfig"},
+			{Source: "git/secret", Target: "~/.gitsecret", Secret: true},
+		},
+		Shell: &apps.Shell{
+			Aliases: map[string]string{
+				"g": "git",
+			},
+		},
+	}
+	if err := bundle.Save(filepath.Join(gdfDir, "apps", "git.yaml")); err != nil {
+		t.Fatal(err)
+	}
+
+	profilePath := filepath.Join(gdfDir, "profiles", "default", "profile.yaml")
+	profile, err := config.LoadProfile(profilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile.Apps = []string{"git"}
+	if err := profile.Save(profilePath); err != nil {
+		t.Fatal(err)
+	}
+
+	out := captureStdout(t, func() {
+		if err := runProfileShow(nil, []string{"default"}); err != nil {
+			t.Fatalf("runProfileShow() error = %v", err)
+		}
+	})
+
+	required := []string{
+		"Totals",
+		"Dotfiles",
+		"Aliases",
+		"Secrets",
+		"git",
+	}
+	for _, needle := range required {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected output to contain %q, got:\n%s", needle, out)
+		}
+	}
+}
+
 func TestProfileDelete(t *testing.T) {
 	tmpDir := t.TempDir()
 	gdfDir := filepath.Join(tmpDir, ".gdf")

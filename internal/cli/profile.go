@@ -142,26 +142,34 @@ func runProfileList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(profiles) == 0 {
-		fmt.Println("No profiles found.")
-		fmt.Println("Create one with: gdf profile create <name>")
+		printStatusLine(outputStatusWarn, "No profiles found.")
+		printNextStep("gdf profile create <name>")
 		return nil
 	}
 
-	fmt.Println("Available profiles:")
+	printStatusLine(outputStatusOK, fmt.Sprintf("Found %d profile%s.", len(profiles), pluralize(len(profiles))))
+	fmt.Println()
+	printSectionHeading("Profiles")
+	fmt.Printf("  %-18s  %4s  %8s  %7s  %7s  %8s  %s\n", "Profile", "Apps", "Dotfiles", "Aliases", "Secrets", "Includes", "Description")
 	for _, profile := range profiles {
 		desc := profile.Description
 		if desc == "" {
 			desc = "(no description)"
 		}
-		appCount := len(profile.Apps)
-		includeCount := len(profile.Includes)
-
-		fmt.Printf("  • %s - %s\n", profile.Name, desc)
-		fmt.Printf("    Apps: %d", appCount)
-		if includeCount > 0 {
-			fmt.Printf(", Includes: %d", includeCount)
+		stats := collectAppStats(gdfDir, profile.Apps)
+		dotfiles, aliases, secrets := aggregateAppStats(stats)
+		fmt.Printf("  %-18s  %4d  %8d  %7d  %7d  %8d  %s\n",
+			profile.Name,
+			len(profile.Apps),
+			dotfiles,
+			aliases,
+			secrets,
+			len(profile.Includes),
+			desc,
+		)
+		if globalVerbose && len(profile.Apps) > 0 {
+			fmt.Printf("  %s apps: %s\n", strings.Repeat(" ", 18), strings.Join(profile.Apps, ", "))
 		}
-		fmt.Println()
 	}
 
 	return nil
@@ -173,7 +181,7 @@ func runProfileShow(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		requested = args[0]
 	}
-	profileName, err := resolveProfileSelection(gdfDir, requested)
+	profileName, err := resolveProfileSelectionForCommand(gdfDir, requested, "gdf profile show")
 	if err != nil {
 		return err
 	}
@@ -188,48 +196,72 @@ func runProfileShow(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("loading profile: %w", err)
 	}
 
-	// Display profile information
-	fmt.Printf("Profile: %s\n", profile.Name)
-	if profile.Description != "" {
-		fmt.Printf("Description: %s\n", profile.Description)
-	}
+	stats := collectAppStats(gdfDir, profile.Apps)
+	totalDotfiles, totalAliases, totalSecrets := aggregateAppStats(stats)
+
+	printStatusLine(outputStatusOK, fmt.Sprintf("Loaded profile '%s'.", profile.Name))
 	fmt.Println()
-
-	// Show includes
-	if len(profile.Includes) > 0 {
-		fmt.Println("Includes:")
-		for _, inc := range profile.Includes {
-			fmt.Printf("  - %s\n", inc)
-		}
-		fmt.Println()
+	printSectionHeading("Profile")
+	profileRows := []keyValue{
+		{Key: "Name", Value: profile.Name},
+		{Key: "Description", Value: firstNonEmpty(profile.Description, "(none)")},
+		{Key: "Includes", Value: firstNonEmpty(strings.Join(profile.Includes, ", "), "(none)")},
 	}
+	printKeyValueLines(profileRows)
 
-	// Show apps
-	if len(profile.Apps) > 0 {
-		fmt.Printf("Apps (%d):\n", len(profile.Apps))
-		for _, app := range profile.Apps {
-			fmt.Printf("  - %s\n", app)
-		}
+	fmt.Println()
+	printSectionHeading("Totals")
+	printKeyValueLines([]keyValue{
+		{Key: "Apps", Value: fmt.Sprintf("%d", len(profile.Apps))},
+		{Key: "Dotfiles", Value: fmt.Sprintf("%d", totalDotfiles)},
+		{Key: "Aliases", Value: fmt.Sprintf("%d", totalAliases)},
+		{Key: "Secrets", Value: fmt.Sprintf("%d", totalSecrets)},
+	})
+
+	fmt.Println()
+	printSectionHeading("Apps")
+	if len(stats) == 0 {
+		fmt.Println("  (none)")
 	} else {
-		fmt.Println("Apps: (none)")
+		printProfileAppStatsTable(stats)
 	}
 
 	// Show conditions if any
 	if len(profile.Conditions) > 0 {
 		fmt.Println()
-		fmt.Printf("Conditions (%d):\n", len(profile.Conditions))
+		printSectionHeading(fmt.Sprintf("Conditions (%d)", len(profile.Conditions)))
 		for i, cond := range profile.Conditions {
-			fmt.Printf("  %d. If: %s\n", i+1, cond.If)
+			fmt.Printf("  %d. if: %s\n", i+1, cond.If)
 			if len(cond.IncludeApps) > 0 {
-				fmt.Printf("     Include: %v\n", cond.IncludeApps)
+				fmt.Printf("     include: %v\n", cond.IncludeApps)
 			}
 			if len(cond.ExcludeApps) > 0 {
-				fmt.Printf("     Exclude: %v\n", cond.ExcludeApps)
+				fmt.Printf("     exclude: %v\n", cond.ExcludeApps)
 			}
 		}
 	}
 
 	return nil
+}
+
+func printProfileAppStatsTable(stats []appStats) {
+	fmt.Printf("  %-18s  %8s  %7s  %7s  %8s\n", "App", "Dotfiles", "Aliases", "Secrets", "Source")
+	for _, stat := range stats {
+		fmt.Printf("  %-18s  %8d  %7d  %7d  %8s\n",
+			stat.Name,
+			stat.Dotfiles,
+			stat.Aliases,
+			stat.Secrets,
+			stat.Source,
+		)
+	}
+}
+
+func firstNonEmpty(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
 }
 
 func runProfileDelete(cmd *cobra.Command, args []string) error {

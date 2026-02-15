@@ -76,46 +76,60 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(report.AppliedProfiles) == 0 {
-		fmt.Println("No profiles currently applied.")
-		fmt.Println()
-		fmt.Println("💡 Use 'gdf apply <profile>' to apply a profile.")
+		printStatusLine(outputStatusWarn, "No profiles currently applied.")
+		printNextStep("gdf apply <profile>")
 		return nil
 	}
 
-	fmt.Println("Applied Profiles:")
+	printStatusLine(outputStatusOK, "Status report generated.")
+	fmt.Println()
+	printSectionHeading("Applied Profiles")
 	for _, profile := range report.AppliedProfiles {
-		fmt.Printf("  ✓ %s (%d app%s) - applied %s\n",
+		fmt.Printf("  %-18s  apps:%-3d  last:%s\n",
 			profile.Name,
 			profile.AppCount,
-			pluralize(profile.AppCount),
 			profile.AppliedAgo,
 		)
 	}
 
-	fmt.Printf("\nApps (%d total):\n", len(report.Apps))
-	fmt.Print("  ")
-	for i, app := range report.Apps {
-		if i > 0 {
-			fmt.Print(", ")
-		}
-		fmt.Print(app)
-	}
 	fmt.Println()
-
-	fmt.Printf("\nDrift summary: %d issue(s)\n", report.Drift.Total)
-	if report.Drift.Total > 0 {
-		fmt.Printf("  source missing: %d\n", report.Drift.SourceMissing)
-		fmt.Printf("  target missing: %d\n", report.Drift.TargetMissing)
-		fmt.Printf("  target mismatch: %d\n", report.Drift.TargetMismatch)
-		fmt.Printf("  target not symlink: %d\n", report.Drift.TargetNotSymlink)
-		fmt.Printf("  target read error: %d\n", report.Drift.TargetReadError)
-		fmt.Println("  💡 Run 'gdf status diff' for details.")
+	printSectionHeading("Summary")
+	summaryRows := []keyValue{
+		{Key: "Profiles applied", Value: fmt.Sprintf("%d", len(report.AppliedProfiles))},
+		{Key: "Apps total", Value: fmt.Sprintf("%d", len(report.Apps))},
+		{Key: "Drift issues", Value: fmt.Sprintf("%d", report.Drift.Total)},
 	}
-
 	if report.LastApplied != "" {
-		fmt.Printf("\nLast applied: %s\n", report.LastApplied)
+		summaryRows = append(summaryRows, keyValue{Key: "Last applied", Value: report.LastApplied})
+	}
+	printKeyValueLines(summaryRows)
+
+	fmt.Println()
+	printSectionHeading("Apps")
+	if globalVerbose {
+		for _, app := range report.Apps {
+			fmt.Printf("  - %s\n", app)
+		}
+	} else {
+		fmt.Printf("  %s\n", strings.Join(report.Apps, ", "))
 	}
 
+	fmt.Println()
+	printSectionHeading("Drift")
+	if report.Drift.Total > 0 {
+		printStatusLine(outputStatusWarn, fmt.Sprintf("%d drift issue%s detected.", report.Drift.Total, pluralize(report.Drift.Total)))
+		printKeyValueLines([]keyValue{
+			{Key: "source missing", Value: fmt.Sprintf("%d", report.Drift.SourceMissing)},
+			{Key: "target missing", Value: fmt.Sprintf("%d", report.Drift.TargetMissing)},
+			{Key: "target mismatch", Value: fmt.Sprintf("%d", report.Drift.TargetMismatch)},
+			{Key: "target not symlink", Value: fmt.Sprintf("%d", report.Drift.TargetNotSymlink)},
+			{Key: "target read error", Value: fmt.Sprintf("%d", report.Drift.TargetReadError)},
+		})
+		printNextStep("gdf status diff")
+		return nil
+	}
+
+	printStatusLine(outputStatusOK, "No drift detected.")
 	return nil
 }
 
@@ -139,30 +153,38 @@ func runStatusDiff(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(report.Drift.Issues) == 0 {
-		fmt.Println("No drift detected.")
+		printStatusLine(outputStatusOK, "No drift detected.")
 		return nil
 	}
 
-	fmt.Printf("Drift issues (%d):\n", len(report.Drift.Issues))
+	printStatusLine(outputStatusWarn, fmt.Sprintf("Drift issues (%d):", len(report.Drift.Issues)))
 	for i, issue := range report.Drift.Issues {
-		fmt.Printf("  %d. [%s] app=%s target=%s\n", i+1, issue.Type, issue.App, issue.Target)
+		fmt.Println()
+		printSectionHeading(fmt.Sprintf("Issue %d", i+1))
+		rows := []keyValue{
+			{Key: "type", Value: issue.Type},
+			{Key: "app", Value: issue.App},
+			{Key: "target", Value: issue.Target},
+		}
 		if issue.Source != "" {
-			fmt.Printf("     source: %s\n", issue.Source)
+			rows = append(rows, keyValue{Key: "source", Value: issue.Source})
 		}
 		if issue.Expected != "" {
-			fmt.Printf("     expected: %s\n", issue.Expected)
+			rows = append(rows, keyValue{Key: "expected", Value: issue.Expected})
 		}
 		if issue.Actual != "" {
-			fmt.Printf("     actual: %s\n", issue.Actual)
+			rows = append(rows, keyValue{Key: "actual", Value: issue.Actual})
 		}
 		if issue.Preview != "" {
-			fmt.Printf("     preview: %s\n", issue.Preview)
+			rows = append(rows, keyValue{Key: "preview", Value: issue.Preview})
 		}
+		printKeyValueLines(rows)
 		if issue.Patch != "" {
-			fmt.Printf("     patch:\n%s\n", issue.Patch)
+			fmt.Println("  patch:")
+			fmt.Println(issue.Patch)
 		}
 		if issue.PatchSkippedReason != "" {
-			fmt.Printf("     patch: skipped (%s)\n", issue.PatchSkippedReason)
+			fmt.Printf("  patch: skipped (%s)\n", issue.PatchSkippedReason)
 		}
 	}
 

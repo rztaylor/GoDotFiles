@@ -78,7 +78,7 @@ func runAppImport(cmd *cobra.Command, args []string) error {
 		return withExitCode(fmt.Errorf("guided import requires interactive input; use --preview or --apply"), exitCodeNonInteractiveStop)
 	}
 
-	profileName, err := resolveProfileSelection(platform.ConfigDir(), importProfile)
+	profileName, err := resolveProfileSelectionForCommand(platform.ConfigDir(), importProfile, "gdf app import")
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func runAppImport(cmd *cobra.Command, args []string) error {
 	if logPath, err := audit.Save(platform.ConfigDir()); err != nil {
 		return err
 	} else if logPath != "" {
-		fmt.Printf("📝 Logged import decisions: %s\n", logPath)
+		fmt.Printf("Logged import decisions: %s\n", logPath)
 	}
 
 	if importJSON {

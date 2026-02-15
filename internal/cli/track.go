@@ -61,7 +61,7 @@ func runTrack(cmd *cobra.Command, args []string) error {
 	if logPath, err := audit.Save(platform.ConfigDir()); err != nil {
 		return err
 	} else if logPath != "" {
-		fmt.Printf("📝 Logged conflict decisions: %s\n", logPath)
+		fmt.Printf("Logged conflict decisions: %s\n", logPath)
 	}
 	return nil
 }
@@ -202,7 +202,7 @@ func trackFile(path string, opts trackFileOptions) (*trackFileResult, error) {
 
 	fmt.Printf("✓ Tracked %s in app '%s'\n", path, appName)
 	if opts.Secret {
-		fmt.Println("🔒 Marked as SECRET (gitignored)")
+		fmt.Println("Marked as SECRET (gitignored)")
 	}
 
 	return &trackFileResult{}, nil

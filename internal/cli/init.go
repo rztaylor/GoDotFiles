@@ -217,7 +217,7 @@ func createNewRepo(gdfDir string) error {
 	// Offer to inject shell integration
 	if err := offerShellInjection(); err != nil {
 		// Warn but don't fail the init
-		fmt.Printf("⚠ Could not set up shell integration: %v\n", err)
+		fmt.Printf("! Could not set up shell integration: %v\n", err)
 		fmt.Println("  You can add it manually later.")
 	}
 
@@ -249,7 +249,7 @@ func cloneRepo(url, gdfDir string) error {
 	// Offer to inject shell integration
 	if err := offerShellInjection(); err != nil {
 		// Warn but don't fail
-		fmt.Printf("⚠ Could not set up shell integration: %v\n", err)
+		fmt.Printf("! Could not set up shell integration: %v\n", err)
 		fmt.Println("  You can add it manually later.")
 	}
 
@@ -349,7 +349,7 @@ func offerShellInjection() error {
 	shellType := shell.ParseShellType(detectedShell)
 
 	if shellType == shell.Unknown {
-		fmt.Println("\n⚠ Could not detect your shell")
+		fmt.Println("\n! Could not detect your shell")
 		fmt.Println("  To enable shell integration, add to your shell config:")
 		fmt.Println("  [ -f ~/.gdf/generated/init.sh ] && source ~/.gdf/generated/init.sh")
 		return nil
@@ -410,7 +410,7 @@ func offerShellInjection() error {
 		if installCompletion {
 			completionPath, err := installShellCompletion(shellType)
 			if err != nil {
-				fmt.Printf("⚠ Could not install shell completion automatically: %v\n", err)
+				fmt.Printf("! Could not install shell completion automatically: %v\n", err)
 				printManualCompletionInstructions(shellType)
 			} else {
 				fmt.Printf("✓ Installed shell completion: %s\n", completionPath)

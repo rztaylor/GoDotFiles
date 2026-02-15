@@ -43,6 +43,10 @@ security:
   log_scripts: false
 history:
   max_size_mb: 1024
+ui:
+  color: always
+  color_section_headings: true
+  highlight_key_values: false
 `,
 			wantShell:    "zsh",
 			wantAliases:  "error",
@@ -91,6 +95,20 @@ shell: [invalid`,
 
 			if tt.name == "full config" && (cfg.History == nil || cfg.History.MaxSizeMBDefault() != 1024) {
 				t.Errorf("History.MaxSizeMBDefault() = %d, want 1024", cfg.History.MaxSizeMBDefault())
+			}
+			if tt.name == "full config" {
+				if cfg.UI == nil {
+					t.Fatal("UI config should be set for full config")
+				}
+				if got := cfg.UI.ColorDefault(); got != "always" {
+					t.Fatalf("UI.ColorDefault() = %q, want always", got)
+				}
+				if !cfg.UI.ColorSectionHeadingsDefault() {
+					t.Fatal("UI.ColorSectionHeadingsDefault() = false, want true")
+				}
+				if cfg.UI.HighlightKeyValuesDefault() {
+					t.Fatal("UI.HighlightKeyValuesDefault() = true, want false")
+				}
 			}
 
 			// Check conflict resolution defaults
@@ -294,6 +312,10 @@ func TestDefaultConfigYAML_IncludesAllSections(t *testing.T) {
 		"check_interval: 24h",
 		"shell_integration:",
 		"auto_reload_enabled: false",
+		"ui:",
+		"color: auto",
+		"color_section_headings: true",
+		"highlight_key_values: true",
 	}
 
 	for _, needle := range required {
@@ -326,4 +348,38 @@ func TestWriteDefaultConfig(t *testing.T) {
 	if cfg.Kind != "Config/v1" {
 		t.Fatalf("kind = %q, want Config/v1", cfg.Kind)
 	}
+}
+
+func TestUIConfig_Defaults(t *testing.T) {
+	t.Run("nil defaults", func(t *testing.T) {
+		var u *UIConfig
+		if got := u.ColorDefault(); got != "auto" {
+			t.Fatalf("ColorDefault() = %q, want auto", got)
+		}
+		if !u.ColorSectionHeadingsDefault() {
+			t.Fatal("ColorSectionHeadingsDefault() = false, want true")
+		}
+		if !u.HighlightKeyValuesDefault() {
+			t.Fatal("HighlightKeyValuesDefault() = false, want true")
+		}
+	})
+
+	t.Run("explicit values", func(t *testing.T) {
+		section := false
+		keys := false
+		u := &UIConfig{
+			Color:                "never",
+			ColorSectionHeadings: &section,
+			HighlightKeyValues:   &keys,
+		}
+		if got := u.ColorDefault(); got != "never" {
+			t.Fatalf("ColorDefault() = %q, want never", got)
+		}
+		if u.ColorSectionHeadingsDefault() {
+			t.Fatal("ColorSectionHeadingsDefault() = true, want false")
+		}
+		if u.HighlightKeyValuesDefault() {
+			t.Fatal("HighlightKeyValuesDefault() = true, want false")
+		}
+	})
 }

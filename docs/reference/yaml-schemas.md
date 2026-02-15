@@ -404,6 +404,12 @@ history:
 # Shell integration behavior
 shell_integration:
   auto_reload_enabled: true | false   # Default: false (recommended true for interactive shells)
+
+# CLI presentation defaults
+ui:
+  color: auto | always | never        # Default: auto
+  color_section_headings: true | false # Default: true
+  highlight_key_values: true | false   # Default: true
 ```
 
 Preference precedence during `gdf apply`:

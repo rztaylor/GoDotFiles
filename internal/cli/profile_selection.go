@@ -13,6 +13,10 @@ import (
 const profileSelectionPromptDefaultCancel = "profile selection cancelled"
 
 func resolveProfileSelection(gdfDir, requestedProfile string) (string, error) {
+	return resolveProfileSelectionForCommand(gdfDir, requestedProfile, "")
+}
+
+func resolveProfileSelectionForCommand(gdfDir, requestedProfile, commandLabel string) (string, error) {
 	requestedProfile = strings.TrimSpace(requestedProfile)
 	if requestedProfile != "" {
 		return requestedProfile, nil
@@ -26,23 +30,29 @@ func resolveProfileSelection(gdfDir, requestedProfile string) (string, error) {
 	names := profileNames(profiles)
 	switch len(names) {
 	case 0:
-		return "", fmt.Errorf("no profiles found; create one with 'gdf profile create <name>' or pass --profile")
+		return "", fmt.Errorf("no profiles found\n\nHow to fix\n  1. Run `gdf profile create <name>`\n  2. Re-run with `--profile <name>`")
 	case 1:
 		return names[0], nil
 	default:
-		return chooseProfileInteractive(names)
+		return chooseProfileInteractive(names, commandLabel)
 	}
 }
 
-func chooseProfileInteractive(names []string) (string, error) {
+func chooseProfileInteractive(names []string, commandLabel string) (string, error) {
 	if globalNonInteractive {
 		return "", withExitCode(
-			fmt.Errorf("multiple profiles found (%s); rerun with --profile", strings.Join(names, ", ")),
+			fmt.Errorf("multiple profiles found (%s)\n\nHow to fix\n  1. Re-run with `--profile <name>`\n  2. Check profiles with `gdf profile list`", strings.Join(names, ", ")),
 			exitCodeNonInteractiveStop,
 		)
 	}
 
-	fmt.Println("Multiple profiles found:")
+	printSectionHeading("Step 1/2: Select Profile")
+	if strings.TrimSpace(commandLabel) == "" {
+		fmt.Println("  Required context is missing. Choose a profile to continue.")
+	} else {
+		fmt.Printf("  `%s` needs a profile. Choose one to continue.\n", commandLabel)
+	}
+	fmt.Println()
 	for i, name := range names {
 		fmt.Printf("  %d. %s\n", i+1, name)
 	}
@@ -60,7 +70,11 @@ func chooseProfileInteractive(names []string) (string, error) {
 	if err != nil || idx < 1 || idx > len(names) {
 		return "", fmt.Errorf("invalid profile selection: %q", input)
 	}
-	return names[idx-1], nil
+	selected := names[idx-1]
+	fmt.Println()
+	printSectionHeading("Step 2/2: Confirm Selection")
+	printKeyValueLines([]keyValue{{Key: "Profile", Value: selected}})
+	return selected, nil
 }
 
 func profileNames(profiles []*config.Profile) []string {

@@ -11,11 +11,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add a new user FAQ with practical setup, conflict, sync, recovery, and offboarding scenarios.
 - Add `--apply` support to `gdf app move` and `gdf app remove` for guarded immediate activation parity with `gdf app add --apply`.
 - Add `gdf apply --run-apply-hooks` and `--apply-hook-timeout` for explicit opt-in hook execution with deterministic timeout behavior.
+- Add global `--color <auto|always|never>` and `config.yaml` `ui` settings for CLI presentation defaults.
+- Add a dedicated UI style guide at `docs/reference/ui-style-guide.md` for consistent CLI output structure and typography.
 
 ### Changed
 - `gdf apply` with no profile arguments now reuses previously applied profiles when available, then falls back to profile selection.
 - Clarify that `gdf app add` updates configuration only; run `gdf apply` to change the live system.
 - `gdf apply` now acquires an operation lock and writes generated shell/completion artifacts atomically to reduce concurrent-run corruption risk.
+- Improve profile, app, and status command output with clearer sections, aligned counters, and key/value emphasis.
+- Default profile resolution prompts now use guided selection text when required context is missing in interactive terminals.
+- Reduce decorative emoji usage across CLI output in favor of restrained status markers.
 
 ### Fixed
 - Profile-based commands no longer assume `default` when `--profile` is omitted: they now error with no profiles, auto-select with one, and prompt with many.

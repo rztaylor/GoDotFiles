@@ -178,7 +178,7 @@ gdf app remove git -p base --apply
 If you omit `--profile` on profile-dependent commands, GDF now resolves it as follows:
 - no profiles: returns an error
 - one profile: selects it automatically
-- multiple profiles: prompts you to choose
+- multiple profiles: launches guided selection
 
 What this does:
 1. Creates/updates the `git` app bundle.

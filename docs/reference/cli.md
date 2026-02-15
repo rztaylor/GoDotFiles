@@ -10,9 +10,16 @@ Complete reference for all gdf commands.
 | Flag            | Description               |
 | --------------- | ------------------------- |
 | `-v, --verbose` | Enable verbose output     |
+| `--color <auto|always|never>` | Control colorized human output (`NO_COLOR` also disables color) |
 | `--yes`         | Auto-approve supported prompts |
 | `--non-interactive` | Disable supported prompts and fail when confirmation is required |
 | `-h, --help`    | Show help for any command |
+
+Human-readable output conventions:
+- Section headings are used consistently (`Summary`, `Details`, `Next Step`).
+- Key/value lines align and emphasize keys for faster scanning.
+- Status markers are restrained and professional (`✓`, `✗`, `!`).
+- When required context is missing in interactive terminals, GDF uses guided prompts by default.
 
 ## CLI Information Architecture
 
@@ -79,7 +86,7 @@ Add an app bundle to a profile.
 
 | Flag                      | Description                         |
 | ------------------------- | ----------------------------------- |
-| `-p, --profile <profile>` | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
+| `-p, --profile <profile>` | Target profile (if omitted: auto-select one profile, or guided selection when multiple) |
 | `--from-recipe`           | Use built-in recipe                 |
 | `--interactive`           | Show recipe suggestions and dependency prompts |
 | `--apply`                 | Preview and apply the selected profile after adding (requires confirmation unless `--yes`) |
@@ -98,7 +105,7 @@ Remove an app bundle from a profile.
 
 | Flag                      | Description                         |
 | ------------------------- | ----------------------------------- |
-| `-p, --profile <profile>` | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
+| `-p, --profile <profile>` | Target profile (if omitted: auto-select one profile, or guided selection when multiple) |
 | `--uninstall`             | Unlink managed dotfiles and uninstall package only when no profiles still reference the app |
 | `--dry-run`               | Preview removal actions without writing changes |
 | `--yes`                   | Skip uninstall/unlink confirmation prompt |
@@ -113,7 +120,7 @@ List apps in a profile.
 
 | Flag                      | Description                                    |
 | ------------------------- | ---------------------------------------------- |
-| `-p, --profile <profile>` | Profile to list apps from (if omitted: auto-select one profile, or prompt when multiple) |
+| `-p, --profile <profile>` | Profile to list apps from (if omitted: auto-select one profile, or guided selection when multiple) |
 
 #### `gdf app prune [flags]`
 
@@ -156,8 +163,8 @@ Supports wildcard patterns (e.g. `gnome-*`, `*`).
  
 | Flag               | Description                         |
 | ------------------ | ----------------------------------- |
-| `--from <profile>` | Source profile (if omitted: auto-select one profile, or prompt when multiple) |
-| `--to <profile>`   | Target profile (if omitted: auto-select one profile, or prompt when multiple) |
+| `--from <profile>` | Source profile (if omitted: auto-select one profile, or guided selection when multiple) |
+| `--to <profile>`   | Target profile (if omitted: auto-select one profile, or guided selection when multiple) |
 | `--apply`          | Preview and apply both affected profiles after move (requires confirmation unless `--yes`) |
  
 ```bash
@@ -171,12 +178,12 @@ gdf app move --from old-work --to work # Move all apps
 Install an app directly. if the app is not defined or the installation method is unknown for the current OS, it will prompt to learn the package details.
 If the app already defines `package.custom`, GDF uses that script as a valid install method when no package-manager mapping is available.
 
-If `--profile` is omitted, GDF selects a profile automatically when exactly one exists, or prompts you when multiple profiles exist.
+If `--profile` is omitted, GDF selects a profile automatically when exactly one exists, or launches guided selection when multiple profiles exist.
 
 | Flag        | Description                                  |
 | ----------- | -------------------------------------------- |
 | `--package` | Specify package name manually (skips prompt) |
-| `-p, --profile <profile>` | Profile to add app to (if omitted: auto-select one profile, or prompt when multiple) |
+| `-p, --profile <profile>` | Profile to add app to (if omitted: auto-select one profile, or guided selection when multiple) |
 
 ```bash
 gdf app install ripgrep
@@ -213,7 +220,7 @@ Import modes:
 | `--preview` | Preview discovered items without importing |
 | `--apply` | Apply import directly |
 | `--json` | Output preview/result as JSON |
-| `-p, --profile <profile>` | Profile to add imported apps to (if omitted: auto-select one profile, or prompt when multiple) |
+| `-p, --profile <profile>` | Profile to add imported apps to (if omitted: auto-select one profile, or guided selection when multiple) |
 | `--sensitive-handling <ignore|secret|plain>` | Required in `--apply` mode when sensitive files are detected |
 
 ```bash

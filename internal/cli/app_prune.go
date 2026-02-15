@@ -194,7 +194,7 @@ func printDanglingAppCleanupGuidance(gdfDir, appName string) {
 		if orphan.Name != appName {
 			continue
 		}
-		fmt.Printf("ℹ️  App '%s' is no longer referenced by any profile.\n", appName)
+		fmt.Printf("i App '%s' is no longer referenced by any profile.\n", appName)
 		fmt.Printf("    Use 'gdf app prune --dry-run' to review cleanup actions.\n")
 		return
 	}

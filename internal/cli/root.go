@@ -32,6 +32,10 @@ supporting composable profiles for different use cases (work, home, SRE, etc).`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if err := configureOutputStyle(cmd); err != nil {
+			return err
+		}
+
 		// Skip check for commands that don't require initialization
 		if shouldSkipInitCheck(cmd) {
 			return nil
@@ -112,7 +116,8 @@ func Execute() error {
 
 func init() {
 	// Global flags will be added here
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&globalVerbose, "verbose", "v", false, "Enable verbose output")
+	rootCmd.PersistentFlags().StringVar(&globalColorMode, "color", "auto", "Color mode: auto, always, never")
 	rootCmd.PersistentFlags().BoolVar(&globalYes, "yes", false, "Automatically approve safe interactive prompts")
 	rootCmd.PersistentFlags().BoolVar(&globalNonInteractive, "non-interactive", false, "Disable interactive prompts and fail when confirmation is required")
 }

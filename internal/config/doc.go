@@ -14,6 +14,7 @@
 //   - Config: Global configuration
 //   - Profile: Profile definition
 //   - AppBundle: App bundle definition
+//   - UIConfig: CLI presentation defaults (color and highlighting)
 //
 // # Dependencies
 //

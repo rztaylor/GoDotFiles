@@ -46,14 +46,14 @@ func runMove(cmd *cobra.Command, args []string) error {
 	}
 
 	if from == "" {
-		resolvedFrom, err := resolveProfileSelection(gdfDir, from)
+		resolvedFrom, err := resolveProfileSelectionForCommand(gdfDir, from, "gdf app move --from")
 		if err != nil {
 			return err
 		}
 		from = resolvedFrom
 	}
 	if to == "" {
-		resolvedTo, err := resolveProfileSelection(gdfDir, to)
+		resolvedTo, err := resolveProfileSelectionForCommand(gdfDir, to, "gdf app move --to")
 		if err != nil {
 			return err
 		}

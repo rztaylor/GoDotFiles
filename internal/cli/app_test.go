@@ -596,8 +596,15 @@ func TestListApps(t *testing.T) {
 	}
 
 	// Run list command
-	if err := runList(nil, nil); err != nil {
-		t.Fatalf("runList() error = %v", err)
+	out := captureStdout(t, func() {
+		if err := runList(nil, nil); err != nil {
+			t.Fatalf("runList() error = %v", err)
+		}
+	})
+	for _, needle := range []string{"Summary", "Apps", "app1", "app2"} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected app list output to contain %q, got:\n%s", needle, out)
+		}
 	}
 }
 

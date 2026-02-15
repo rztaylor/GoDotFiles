@@ -63,7 +63,7 @@ If `--profile` is omitted, profile-dependent commands resolve as:
 
 - no profiles: error
 - one profile: auto-select
-- multiple profiles: prompt
+- multiple profiles: guided selection prompt
 
 Use `-p/--profile` to avoid interactive selection.
 

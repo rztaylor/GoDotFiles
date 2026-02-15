@@ -39,7 +39,7 @@ func init() {
 func runInstall(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	gdfDir := platform.ConfigDir()
-	profileName, err := resolveProfileSelection(gdfDir, installProfile)
+	profileName, err := resolveProfileSelectionForCommand(gdfDir, installProfile, "gdf app install")
 	if err != nil {
 		return err
 	}
@@ -167,20 +167,20 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// 5. Install Phase
 	if useCustom {
-		fmt.Printf("📦 Installing %s via custom script...\n", appName)
+		fmt.Printf("Installing %s via custom script...\n", appName)
 		custom := packages.NewCustom()
 		if err := custom.Execute(bundle.Package.Custom); err != nil {
 			return fmt.Errorf("executing custom install script: %w", err)
 		}
-		fmt.Println("✅ Installed successfully")
+		fmt.Println("✓ Installed successfully")
 	} else if defined && pkgName != "" {
-		fmt.Printf("📦 Installing %s via %s...\n", pkgName, pkgMgr.Name())
+		fmt.Printf("Installing %s via %s...\n", pkgName, pkgMgr.Name())
 		if err := pkgMgr.Install(pkgName); err != nil {
 			return fmt.Errorf("installing package: %w", err)
 		}
-		fmt.Println("✅ Installed successfully")
+		fmt.Println("✓ Installed successfully")
 	} else {
-		fmt.Println("⏭️  Skipping installation (unknown method)")
+		fmt.Println("- Skipping installation (unknown method)")
 	}
 
 	return nil

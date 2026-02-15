@@ -51,6 +51,11 @@ updates:
 
 shell_integration:
   auto_reload_enabled: false
+
+ui:
+  color: auto
+  color_section_headings: true
+  highlight_key_values: true
 `, DefaultShell(shell))
 }
 

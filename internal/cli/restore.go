@@ -32,7 +32,7 @@ func init() {
 
 func runRestore(cmd *cobra.Command, args []string) error {
 	// 1. Warning and Confirmation
-	fmt.Println("⚠️  WARNING: This command will restore all tracked files to their original locations,")
+	fmt.Println("! WARNING: This command will restore all tracked files to their original locations,")
 	fmt.Println("replacing the managed symlinks. It will also export your current aliases to a file")
 	fmt.Println("and update your shell configuration to use that file instead of GDF.")
 	fmt.Println("")
@@ -124,7 +124,7 @@ func exportAliases(gdfDir string, bundles []*apps.Bundle, path string) error {
 	if err != nil {
 		// Verify if it's just missing file or real error
 		if !os.IsNotExist(err) {
-			fmt.Printf("⚠️  Warning: could not load global aliases: %v\n", err)
+			fmt.Printf("! Warning: could not load global aliases: %v\n", err)
 		}
 		ga = &apps.GlobalAliases{Aliases: make(map[string]string)}
 	}

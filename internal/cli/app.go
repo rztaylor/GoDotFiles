@@ -98,7 +98,7 @@ func init() {
 func runAdd(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	gdfDir := platform.ConfigDir()
-	profileName, err := resolveProfileSelection(gdfDir, targetProfile)
+	profileName, err := resolveProfileSelectionForCommand(gdfDir, targetProfile, "gdf app add")
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,8 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✓ Added '%s' to profile '%s'\n", appName, profileName)
 
 	if !addApply {
-		fmt.Printf("ℹ️  Desired state updated. Live system unchanged. Run: gdf apply %s\n", profileName)
+		printStatusLine(outputStatusInfo, "Desired state updated. Live system unchanged.")
+		printNextStep(fmt.Sprintf("gdf apply %s", profileName))
 		return nil
 	}
 
@@ -229,7 +230,7 @@ func applyProfilesGuarded(profileNames []string) error {
 		)
 	}
 
-	fmt.Printf("\n🔍 Previewing apply for profile(s): %s\n", strings.Join(profileArgs, ", "))
+	fmt.Printf("\n! Previewing apply for profile(s): %s\n", strings.Join(profileArgs, ", "))
 	originalDryRun := applyDryRun
 	originalJSON := applyJSON
 	defer func() {
@@ -254,7 +255,7 @@ func applyProfilesGuarded(profileNames []string) error {
 		}
 	}
 
-	fmt.Printf("\n🚀 Applying profile(s): %s\n", strings.Join(profileArgs, ", "))
+	fmt.Printf("\n✓ Applying profile(s): %s\n", strings.Join(profileArgs, ", "))
 	applyDryRun = false
 	applyJSON = false
 	if err := runApply(nil, profileArgs); err != nil {
@@ -327,7 +328,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	appName := args[0]
 	gdfDir := platform.ConfigDir()
 	plat := platform.Detect()
-	profileName, err := resolveProfileSelection(gdfDir, targetProfile)
+	profileName, err := resolveProfileSelectionForCommand(gdfDir, targetProfile, "gdf app remove")
 	if err != nil {
 		return err
 	}
@@ -399,7 +400,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 
 func runList(cmd *cobra.Command, args []string) error {
 	gdfDir := platform.ConfigDir()
-	profileName, err := resolveProfileSelection(gdfDir, targetProfile)
+	profileName, err := resolveProfileSelectionForCommand(gdfDir, targetProfile, "gdf app list")
 	if err != nil {
 		return err
 	}
@@ -410,15 +411,28 @@ func runList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("loading profile: %w", err)
 	}
 
-	fmt.Printf("Apps in profile '%s':\n", profileName)
-	if len(profile.Apps) == 0 {
+	stats := collectAppStats(gdfDir, profile.Apps)
+	totalDotfiles, totalAliases, totalSecrets := aggregateAppStats(stats)
+
+	printStatusLine(outputStatusOK, fmt.Sprintf("Loaded apps for profile '%s'.", profileName))
+	fmt.Println()
+	printSectionHeading("Summary")
+	printKeyValueLines([]keyValue{
+		{Key: "Profile", Value: profileName},
+		{Key: "Apps", Value: fmt.Sprintf("%d", len(stats))},
+		{Key: "Dotfiles", Value: fmt.Sprintf("%d", totalDotfiles)},
+		{Key: "Aliases", Value: fmt.Sprintf("%d", totalAliases)},
+		{Key: "Secrets", Value: fmt.Sprintf("%d", totalSecrets)},
+	})
+
+	fmt.Println()
+	printSectionHeading("Apps")
+	if len(stats) == 0 {
 		fmt.Println("  (none)")
 		return nil
 	}
+	printProfileAppStatsTable(stats)
 
-	for _, app := range profile.Apps {
-		fmt.Printf("  - %s\n", app)
-	}
 	return nil
 }
 
@@ -644,9 +658,9 @@ func executeAppRemovalCleanup(gdfDir, appName string, plan *appRemovalPlan) erro
 	if linkedRemoved > 0 {
 		logPath, err := logger.Save(gdfDir)
 		if err != nil {
-			fmt.Printf("⚠️  Warning: failed to save unlink operation log: %v\n", err)
+			fmt.Printf("! Warning: failed to save unlink operation log: %v\n", err)
 		} else if logPath != "" {
-			fmt.Printf("📝 Logged unlink operations for rollback: %s\n", logPath)
+			fmt.Printf("Logged unlink operations for rollback: %s\n", logPath)
 		}
 		fmt.Printf("✓ Unlinked %d managed dotfile(s)\n", linkedRemoved)
 	}

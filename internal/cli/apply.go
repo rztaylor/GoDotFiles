@@ -92,7 +92,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 		}
 		defer func() {
 			if releaseErr := lock.Release(); releaseErr != nil {
-				fmt.Printf("⚠️  Warning: failed to release apply lock: %v\n", releaseErr)
+				fmt.Printf("! Warning: failed to release apply lock: %v\n", releaseErr)
 			}
 		}()
 	}
@@ -120,7 +120,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 	logger := engine.NewLogger(applyDryRun)
 
 	if applyDryRun {
-		fmt.Println("🔍 Dry run mode - no changes will be made")
+		fmt.Println("! Dry run mode - no changes will be made")
 		fmt.Println()
 	}
 
@@ -186,18 +186,18 @@ func runApply(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			// If not found locally, try the library
 			if os.IsNotExist(err) {
-				fmt.Printf("   ℹ️  App '%s' not found locally, checking library...\n", name)
+				fmt.Printf("   i App '%s' not found locally, checking library...\n", name)
 				recipe, libErr := libMgr.Get(name)
 				if libErr == nil {
 					// Found in library, instantiate in-memory
 					bundle = recipe.ToBundle()
-					fmt.Printf("   ✨ Resolved '%s' from library (in-memory)\n", name)
+					fmt.Printf("   i Resolved '%s' from library (in-memory)\n", name)
 				} else {
-					fmt.Printf("⚠️  Warning: skipping app '%s': %v\n", name, err)
+					fmt.Printf("! Warning: skipping app '%s': %v\n", name, err)
 					continue
 				}
 			} else {
-				fmt.Printf("⚠️  Warning: error loading app '%s': %v\n", name, err)
+				fmt.Printf("! Warning: error loading app '%s': %v\n", name, err)
 				continue
 			}
 		}
@@ -237,7 +237,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 		findings = filterRiskFindingsForPolicy(findings)
 	}
 	if len(findings) > 0 {
-		fmt.Println("\n⚠️  High-risk commands detected:")
+		fmt.Println("\n! High-risk commands detected:")
 		for i, f := range findings {
 			fmt.Printf("   %d. app=%s, location=%s\n", i+1, f.App, f.Location)
 			fmt.Printf("      reason: %s\n", f.Reason)
@@ -268,20 +268,20 @@ func runApply(cmd *cobra.Command, args []string) error {
 	linker.SetHistoryManager(engine.NewHistoryManager(gdfDir, cfg.History.MaxSizeMBDefault()))
 
 	for _, bundle := range resolvedApps {
-		fmt.Printf("📦 Processing app: %s\n", bundle.Name)
+		fmt.Printf("Processing app: %s\n", bundle.Name)
 
 		// 5a. Install package (if defined)
 		if bundle.Package != nil {
 			plan := resolvePackageManagerPlan(bundle.Package, plat, cfg)
 			if plan == nil {
-				fmt.Printf("      ⚠️  App '%s' has no supported package manager configuration for this system. Skipping package install.\n", bundle.Name)
+				fmt.Printf("      ! App '%s' has no supported package manager configuration for this system. Skipping package install.\n", bundle.Name)
 				goto SkipPackageInstall
 			}
 
 			selected := plan.Selected
 			if selected.Name == "custom" {
 				fmt.Println("   Package: custom install script")
-				fmt.Println("      ⏭️  Skipping custom script execution during apply")
+				fmt.Println("      - Skipping custom script execution during apply")
 				logger.Log("package_install_skipped", "custom_script", map[string]string{
 					"manager": "custom",
 					"app":     bundle.Name,
@@ -299,7 +299,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 					for _, probe := range plan.Probes {
 						installed, checkErr := probe.Manager.IsInstalled(probe.PackageName)
 						if checkErr != nil {
-							fmt.Printf("      ⚠️  Could not verify install status for '%s' via %s: %v\n", probe.PackageName, probe.Name, checkErr)
+							fmt.Printf("      ! Could not verify install status for '%s' via %s: %v\n", probe.PackageName, probe.Name, checkErr)
 							continue
 						}
 						if installed {
@@ -310,9 +310,9 @@ func runApply(cmd *cobra.Command, args []string) error {
 					}
 					if alreadyInstalled {
 						if detectedBy != "" && detectedBy != selected.Name {
-							fmt.Printf("      ⏭️  Skipping install (already installed via %s)\n", detectedBy)
+							fmt.Printf("      - Skipping install (already installed via %s)\n", detectedBy)
 						} else {
-							fmt.Printf("      ⏭️  Skipping install (already installed)\n")
+							fmt.Printf("      - Skipping install (already installed)\n")
 						}
 					}
 				}
@@ -336,7 +336,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 					})
 				}
 			} else {
-				fmt.Printf("      ⏭️  Skipping (no package manager)\n")
+				fmt.Printf("      - Skipping (no package manager)\n")
 			}
 		}
 
@@ -351,7 +351,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 						return fmt.Errorf("evaluating condition for dotfile %s in app %s: %w", dotfile.Source, bundle.Name, err)
 					}
 					if !match {
-						fmt.Printf("      ⏭️  skip %s (condition: %s)\n", dotfile.Source, dotfile.When)
+						fmt.Printf("      - skip %s (condition: %s)\n", dotfile.Source, dotfile.When)
 						continue
 					}
 				}
@@ -401,7 +401,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 						return fmt.Errorf("evaluating apply hook condition for app %s: %w", bundle.Name, err)
 					}
 					if !match {
-						fmt.Printf("      ⏭️  Skipping hook (condition: %s)\n", hook.When)
+						fmt.Printf("      - Skipping hook (condition: %s)\n", hook.When)
 						logger.Log("hook_skip", hook.Run, map[string]string{
 							"type":   "apply",
 							"app":    bundle.Name,
@@ -422,7 +422,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 				}
 
 				if !applyRunHooks {
-					fmt.Println("      ⏭️  Skipping (hooks.apply execution is disabled; use --run-apply-hooks)")
+					fmt.Println("      - Skipping (hooks.apply execution is disabled; use --run-apply-hooks)")
 					logger.Log("hook_skip", hook.Run, map[string]string{
 						"type":   "apply",
 						"app":    bundle.Name,
@@ -447,7 +447,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 	}
 
 	// Phase 6: Generate shell integration
-	fmt.Println("🐚 Generating shell integration...")
+	fmt.Println("Generating shell integration...")
 	shellGen := shell.NewGenerator()
 
 	// Detect shell type
@@ -465,13 +465,13 @@ func runApply(cmd *cobra.Command, args []string) error {
 			fmt.Printf("   ✓ Managed shell completions updated (%d)\n", compCount)
 		}
 		for _, warning := range compWarnings {
-			fmt.Printf("   ⚠️  %s\n", warning)
+			fmt.Printf("   ! %s\n", warning)
 		}
 
 		// Load global (unassociated) aliases
 		ga, err := apps.LoadGlobalAliases(filepath.Join(gdfDir, "aliases.yaml"))
 		if err != nil {
-			fmt.Printf("⚠️  Warning: could not load global aliases: %v\n", err)
+			fmt.Printf("! Warning: could not load global aliases: %v\n", err)
 			ga = &apps.GlobalAliases{Aliases: make(map[string]string)}
 		}
 
@@ -484,16 +484,16 @@ func runApply(cmd *cobra.Command, args []string) error {
 		}
 	}
 	fmt.Println("   ✓ Shell integration updated")
-	fmt.Println("   💡 Run: source ~/.gdf/generated/init.sh")
+	fmt.Println("   Next: source ~/.gdf/generated/init.sh")
 	logger.Log("shell_generate", shellPath, nil)
 
 	// Phase 7: Save operation log
 	if !applyDryRun {
 		logPath, err := logger.Save(gdfDir)
 		if err != nil {
-			fmt.Printf("⚠️  Warning: could not save operation log: %v\n", err)
+			fmt.Printf("! Warning: could not save operation log: %v\n", err)
 		} else if logPath != "" {
-			fmt.Printf("\n📝 Operations logged to: %s\n", logPath)
+			fmt.Printf("\nOperations logged to: %s\n", logPath)
 		}
 	}
 
@@ -501,7 +501,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 	if !applyDryRun {
 		st, err := state.LoadFromDir(gdfDir)
 		if err != nil {
-			fmt.Printf("⚠️  Warning: could not load state: %v\n", err)
+			fmt.Printf("! Warning: could not load state: %v\n", err)
 		} else {
 			// Add each profile to state
 			for _, profile := range resolvedProfiles {
@@ -510,12 +510,12 @@ func runApply(cmd *cobra.Command, args []string) error {
 
 			// Save state
 			if err := st.Save(filepath.Join(gdfDir, "state.yaml")); err != nil {
-				fmt.Printf("⚠️  Warning: could not save state: %v\n", err)
+				fmt.Printf("! Warning: could not save state: %v\n", err)
 			}
 		}
 	}
 
-	fmt.Println("\n✅ Apply complete!")
+	fmt.Println("\n✓ Apply complete!")
 	if applyDryRun {
 		fmt.Println("   (No changes were made - this was a dry run)")
 	}
@@ -541,16 +541,22 @@ func resolveApplyProfileNames(requested []string, gdfDir string) ([]string, erro
 			names = append(names, profile.Name)
 		}
 		if len(names) > 0 {
-			fmt.Printf("No profile arguments provided. Reapplying profiles from local state: %s\n", strings.Join(names, ", "))
+			printSectionHeading("Apply Context")
+			printKeyValueLines([]keyValue{
+				{Key: "Mode", Value: "Reuse from local state"},
+				{Key: "Profiles", Value: strings.Join(names, ", ")},
+			})
 			return names, nil
 		}
 	}
 
-	selected, err := resolveProfileSelection(gdfDir, "")
+	printSectionHeading("Apply Context")
+	fmt.Println("  No profiles were specified.")
+	selected, err := resolveProfileSelectionForCommand(gdfDir, "", "gdf apply")
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("No profile arguments provided. Applying selected profile: %s\n", selected)
+	printKeyValueLines([]keyValue{{Key: "Selected profile", Value: selected}})
 	return []string{selected}, nil
 }
 
