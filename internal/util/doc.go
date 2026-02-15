@@ -1,17 +1,7 @@
-// Package util provides shared utility functions for GDF.
+// Package util is reserved for shared helper code used across GDF packages.
 //
-// # Responsibility
-//
-// This package provides common utilities used across packages:
-//   - File operations (copy, move, symlink)
-//   - String helpers
-//   - Path utilities
-//   - Error wrapping helpers
-//
-// # Key Functions
-//
-//   - CopyFile: Copy a file with permissions
-//   - Symlink: Create symlinks with backup
-//   - ExpandPath: Expand ~ and environment variables
-//   - FileExists: Check if file exists
+// At the moment, this package only contains package-level documentation and
+// does not define exported utility functions. New helpers should be added here
+// only when they are clearly reusable and do not duplicate existing logic in
+// domain packages.
 package util

@@ -40,6 +40,9 @@ conflict_resolution:
 ~/.gdf/.operations/
 ├── 2024-02-08T21-30-00.log  # What was changed
 └── state.backup.yaml        # Pre-operation state
+
+~/.gdf/.history/
+└── <snapshot-id>.snap       # Historical file copy used for rollback
 ```
 
 **Commands:**
@@ -96,7 +99,7 @@ Phase 2+: Implement age encryption
 
 ```
 ~/.gdf/
-├── .gitignore         # Contains: state.yaml, .operations/
+├── .gitignore         # Contains: state.yaml, .operations/, .history/
 ├── state.yaml         # Local: {applied_profiles: [base, sre]}
 └── profiles/          # Shared via git
 ```

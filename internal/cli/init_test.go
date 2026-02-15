@@ -71,7 +71,7 @@ func TestCreateGitignore(t *testing.T) {
 	}
 
 	// Check required entries
-	required := []string{"state.yaml", ".operations/"}
+	required := []string{"state.yaml", ".operations/", ".history/"}
 	for _, entry := range required {
 		if !containsString(string(content), entry) {
 			t.Errorf(".gitignore missing entry: %s", entry)

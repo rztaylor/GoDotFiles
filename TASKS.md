@@ -5,29 +5,6 @@
 
 ---
 
-### Phase 2: Essential Functionality (Next Priorities)
-
-#### 2.4 App Lifecycle & Cleanup
-- [ ] Implement `Uninstall(pkg)` in `packages.Manager` interface
-- [ ] Implement `gdf remove --uninstall` to prompt for package removal
-- [ ] Implement "Orphaned App" detection (app YAMLs not in any profile)
-- [ ] Add `gdf app prune` to remove dangling app definitions
-- [ ] Add auto-cleanup prompt when removing the last reference to an app
-- [ ] Profile Deletion Strategy: Add `--purge` to `gdf profile delete` to also remove apps only found in that profile
-- [ ] Add interactive choice when deleting a profile: (m)igrate to default, (p)urge unique apps, or (l)eave as dangling
-- [ ] Implement `Unlink` in engine for clean removal of symlinks
-
-#### 2.5 Security & Safety
-- [ ] Security awareness
-    - [ ] Scan configuration for potential malicious scripts (e.g., `curl | sh`)
-    - [ ] Detect pre/post hooks that execute shell commands
-    - [ ] Warn user and request confirmation for high-risk configurations
-    - [ ] Display content of high-risk scripts/hooks for review
-- [ ] Implement operation logging for all file/package actions
-- [ ] Implement `gdf rollback` command (undo last operation)
-
----
-
 ### Phase 3: Enhanced UX & Advanced Features
 
 #### 3.1 Status, Doctor & Validation
@@ -53,6 +30,16 @@
 - [ ] Recipe import/export (`gdf recipe`)
 - [ ] First-class Support for Profile Recipes (allow `kind: Profile/v1` in library)
 - [ ] Remote Recipe Ecosystem (Git-based Registry & Trust Model)
+
+#### 3.5 App Lifecycle & Cleanup
+- [ ] Implement `Uninstall(pkg)` in `packages.Manager` interface
+- [ ] Implement `gdf remove --uninstall` to prompt for package removal
+- [ ] Implement "Orphaned App" detection (app YAMLs not in any profile)
+- [ ] Add `gdf app prune` to remove dangling app definitions
+- [ ] Add auto-cleanup prompt when removing the last reference to an app
+- [ ] Profile Deletion Strategy: Add `--purge` to `gdf profile delete` to also remove apps only found in that profile
+- [ ] Add interactive choice when deleting a profile: (m)igrate to default, (p)urge unique apps, or (l)eave as dangling
+- [ ] Implement `Unlink` in engine for clean removal of symlinks
 
 ---
 

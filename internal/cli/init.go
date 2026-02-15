@@ -137,6 +137,7 @@ func createGitignore(gdfDir string) error {
 	content := `# GDF local-only files
 state.yaml
 .operations/
+.history/
 
 # Editor files
 *.swp
@@ -164,6 +165,9 @@ conflict_resolution:
 security:
   confirm_scripts: true
   log_scripts: true
+
+history:
+  max_size_mb: 512
 `
 	path := filepath.Join(gdfDir, "config.yaml")
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {

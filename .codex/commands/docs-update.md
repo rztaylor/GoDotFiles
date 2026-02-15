@@ -21,6 +21,9 @@ description: Verify docs are in sync with code
 - `docs/user-guide/tutorial.md`
 
 5. Update `CHANGELOG.md` for user-facing changes.
+- Ensure every entry is written for end users:
+- Describe visible behavior/value.
+- Avoid internal implementation details (internal package names, refactors, metadata formats, tooling/lint/test-only notes).
 
 6. Check markdown links in docs:
 `find docs -name "*.md" -exec grep -nE "\\[[^]]+\\]\\([^)]+\\.md\\)" {} \\;`

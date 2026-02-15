@@ -30,6 +30,9 @@ type Config struct {
 	// Security contains security settings.
 	Security *SecurityConfig `yaml:"security,omitempty"`
 
+	// History contains snapshot retention settings.
+	History *HistoryConfig `yaml:"history,omitempty"`
+
 	// Updates contains auto-update settings.
 	Updates *UpdatesConfig `yaml:"updates,omitempty"`
 }
@@ -107,6 +110,12 @@ type SecurityConfig struct {
 	LogScripts *bool `yaml:"log_scripts,omitempty"`
 }
 
+// HistoryConfig controls file snapshot retention.
+type HistoryConfig struct {
+	// MaxSizeMB is the maximum disk usage for ~/.gdf/.history in MB (default: 512).
+	MaxSizeMB *int `yaml:"max_size_mb,omitempty"`
+}
+
 // ConfirmScriptsDefault returns the effective confirm_scripts value.
 func (s *SecurityConfig) ConfirmScriptsDefault() bool {
 	if s.ConfirmScripts == nil {
@@ -121,6 +130,14 @@ func (s *SecurityConfig) LogScriptsDefault() bool {
 		return true
 	}
 	return *s.LogScripts
+}
+
+// MaxSizeMBDefault returns the effective history.max_size_mb value.
+func (h *HistoryConfig) MaxSizeMBDefault() int {
+	if h == nil || h.MaxSizeMB == nil || *h.MaxSizeMB <= 0 {
+		return 512
+	}
+	return *h.MaxSizeMB
 }
 
 // LoadConfig reads the global config from path.

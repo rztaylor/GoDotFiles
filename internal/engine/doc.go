@@ -12,6 +12,8 @@
 //
 //   - Engine: Main orchestrator
 //   - Linker: Dotfile symlink manager
+//   - HistoryManager: Historical snapshot retention manager
+//   - Logger: Operation logger used for rollback
 //   - State: Current applied state
 //   - ApplyResult: Result of an apply operation
 //

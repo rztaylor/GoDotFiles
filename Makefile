@@ -20,7 +20,7 @@ install: test build
 	cp $(BINARY_NAME) $(HOME)/bin/
 
 test:
-	go run ./scripts/test-runner
+	GOCACHE=$${GOCACHE:-/tmp/go-build} go run ./scripts/test-runner
 
 coverage:
 	go test -coverprofile=coverage.out ./...

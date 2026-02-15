@@ -125,6 +125,7 @@ func TestLinker_Link(t *testing.T) {
 			}
 
 			l := NewLinker(tt.strategy)
+			l.SetHistoryManager(NewHistoryManager(gdfDir, 512))
 			dotfile := apps.Dotfile{
 				Source: "app/config",
 				Target: "~/.config",
@@ -140,7 +141,52 @@ func TestLinker_Link(t *testing.T) {
 					t.Errorf("Check failed: %v", err)
 				}
 			}
+
 		})
+	}
+}
+
+func TestLinker_CapturesSnapshotOnReplace(t *testing.T) {
+	tmpDir := t.TempDir()
+	gdfDir := filepath.Join(tmpDir, ".gdf")
+	homeDir := filepath.Join(tmpDir, "home")
+	os.Setenv("HOME", homeDir)
+
+	if err := os.MkdirAll(filepath.Join(gdfDir, "dotfiles", "app"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	sourceFile := filepath.Join(gdfDir, "dotfiles", "app", "config")
+	if err := os.WriteFile(sourceFile, []byte("new-content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(homeDir, ".config")
+	if err := os.WriteFile(target, []byte("old-content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	l := NewLinker("replace")
+	l.SetHistoryManager(NewHistoryManager(gdfDir, 512))
+	err := l.Link(apps.Dotfile{
+		Source: "app/config",
+		Target: "~/.config",
+	}, gdfDir)
+	if err != nil {
+		t.Fatalf("Link() error = %v", err)
+	}
+
+	s := l.ConsumeConflictSnapshot(target)
+	if s == nil {
+		t.Fatal("expected conflict snapshot, got nil")
+	}
+	snapData, err := os.ReadFile(s.Path)
+	if err != nil {
+		t.Fatalf("reading snapshot: %v", err)
+	}
+	if string(snapData) != "old-content" {
+		t.Fatalf("snapshot content = %q, want old-content", string(snapData))
 	}
 }
 

@@ -5,6 +5,7 @@ state.yaml
 
 # Operation logs for rollback
 .operations/
+.history/
 
 # Binaries
 # compiled binary

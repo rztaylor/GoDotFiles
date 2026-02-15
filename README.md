@@ -9,6 +9,8 @@ A cross-platform dotfile manager that unifies **packages, configuration files, a
 - 🖥️ **Cross-Platform** - macOS, Linux, WSL with OS abstraction
 - 📦 **Package Management** - Homebrew, apt, dnf with unified interface
 - 🔄 **Git Backend** - Sync dotfiles across all your machines
+- 🛡️ **Security-Aware Apply** - Warns and confirms when high-risk script patterns are detected
+- 🕘 **Operation History & Rollback** - Operation logs plus historical snapshots for safer recovery
 - ⚡ **80/20 CLI** - Simple commands for common tasks, YAML for advanced
 
 ## Installation
@@ -46,10 +48,13 @@ gdf init
 gdf apply base programming
 
 # Track existing config
-gdf track ~/.gitconfig git
+gdf track ~/.gitconfig -a git
 
 # Add alias (auto-associates with app)
-gdf alias k kubectl
+gdf alias add k kubectl
+
+# Roll back latest apply if needed
+gdf rollback
 
 # Save and sync
 gdf save "Added kubectl alias"

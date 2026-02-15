@@ -4,6 +4,7 @@ description: Cut a new GDF release
 
 1. Prepare changelog:
 - Move `[Unreleased]` items in `CHANGELOG.md` to a new version section (for example `## [0.6.0] - 2026-02-15`).
+- Confirm entries are user-facing (behavior/outcomes) and remove internal implementation details.
 
 2. Commit release prep:
 - Commit the changelog/version updates.

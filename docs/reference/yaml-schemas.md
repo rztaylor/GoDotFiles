@@ -261,6 +261,7 @@ package:
 2. **Shows script source URL** for inspection
 3. **Requires explicit confirmation** (cannot be bypassed with --yes)
 4. **Logs all custom script executions** for audit
+5. **Scans hook/custom commands for high-risk patterns** (for example `curl|wget` piped to shell) and prompts during `gdf apply` unless `--allow-risky` is used
 
 Example interaction:
 ```
@@ -377,6 +378,10 @@ package_manager:
 security:
   confirm_scripts: true   # Always confirm custom scripts (default: true)
   log_scripts: true       # Log script executions (default: true)
+
+# Snapshot history retention
+history:
+  max_size_mb: 512        # Max size for ~/.gdf/.history (default: 512)
 ```
 
 ---

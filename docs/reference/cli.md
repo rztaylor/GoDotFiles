@@ -217,6 +217,7 @@ Apply one or more profiles to the system.
 | Flag        | Description                                    |
 | ----------- | ---------------------------------------------- |
 | `--dry-run` | Show what would be done without making changes |
+| `--allow-risky` | Proceed even if high-risk script patterns are detected |
 
 This command performs the following operations:
 
@@ -226,10 +227,13 @@ This command performs the following operations:
 4. **Link dotfiles** - Creates symlinks with conflict resolution
 5. **Run apply hooks** - Executes hooks for package-less bundles
 6. **Generate shell integration** - Updates shell scripts for aliases/functions/env/init/completions
-7. **Log operations** - Records all operations to `.operations/` for rollback
-8. **Update state** - Records applied profiles to `~/.gdf/state.yaml` (local only)
+7. **Security scan** - Detects high-risk hook/script commands and requests confirmation
+8. **Log operations** - Records all operations to `.operations/` for rollback
+9. **Capture history snapshots** - Saves pre-change file snapshots to `.history/` before destructive replacements
+10. **Update state** - Records applied profiles to `~/.gdf/state.yaml` (local only)
 
 All operations are logged to `~/.gdf/.operations/<timestamp>.json`.
+Historical snapshots are stored in `~/.gdf/.history/` and retained with quota-based eviction.
 
 ```bash
 # Apply single profile
@@ -244,6 +248,24 @@ gdf apply --dry-run work
 # Profile with dependencies will include them
 # If 'work' includes 'base', both are applied
 gdf apply work
+```
+
+#### `gdf rollback`
+
+Undo the most recent operation log and restore captured historical snapshots when available.
+
+| Flag | Description |
+| ---- | ----------- |
+| `--yes` | Skip confirmation prompt |
+| `--choose-snapshot` | Prompt for a snapshot choice when multiple historical versions exist |
+| `--target <path>` | Restore a specific target path from snapshot history |
+
+```bash
+# Rollback latest apply operations
+gdf rollback
+
+# Restore one file from historical snapshots
+gdf rollback --target ~/.zshrc --choose-snapshot
 ```
 
 #### `gdf status`

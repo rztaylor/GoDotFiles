@@ -33,7 +33,7 @@ This is what "dotfile management" solves: gather all your dotfiles into a single
 
 GDF stores **all** your managed dotfiles together inside `~/.gdf/dotfiles/`. But your tools still need to find their configs in the usual places (`~/.gitconfig`, `~/.vimrc`, etc.). GDF bridges this gap using **symlinks** — a standard filesystem feature where a file at one path transparently points to a file at another path.
 
-Here's what happens when you run `gdf track ~/.gitconfig git`:
+Here's what happens when you run `gdf track ~/.gitconfig -a git`:
 
 1. **Copy**: GDF copies `~/.gitconfig` into `~/.gdf/dotfiles/git/.gitconfig`. This is the managed copy, safely inside the GDF repository.
 2. **Replace with symlink**: GDF replaces the original `~/.gitconfig` with a symlink that points to `~/.gdf/dotfiles/git/.gitconfig`.
@@ -161,7 +161,7 @@ Verify the installation:
 gdf --help
 ```
 
-You should see the list of available commands: `init`, `add`, `track`, `alias`, `profile`, `apply`, `save`, `push`, `pull`, `sync`, and `status`.
+You should see the list of available commands, including core workflows like `init`, `add`, `track`, `apply`, `rollback`, `profile`, `alias`, `install`, `save`, `push`, `pull`, `sync`, and `status`.
 
 ---
 
@@ -272,28 +272,28 @@ Your file is now safely stored in `~/.gdf/` and will follow you to any machine.
 > [!NOTE]
 > If you have a global `.gitignore` file, track that too:
 > ```bash
-> gdf track ~/.gitignore_global git
+> gdf track ~/.gitignore_global -a git
 > ```
 
 ### Zsh
 
 ```bash
-gdf add zsh --to base
-gdf track ~/.zshrc zsh
+gdf add zsh -p base
+gdf track ~/.zshrc -a zsh
 ```
 
 ### Vim
 
 ```bash
-gdf add vim --to base
-gdf track ~/.vimrc vim
+gdf add vim -p base
+gdf track ~/.vimrc -a vim
 ```
 
 ### tmux
 
 ```bash
-gdf add tmux --to base
-gdf track ~/.tmux.conf tmux
+gdf add tmux -p base
+gdf track ~/.tmux.conf -a tmux
 ```
 
 ### curl
@@ -301,7 +301,7 @@ gdf track ~/.tmux.conf tmux
 Not every app needs dotfiles. Some are just packages:
 
 ```bash
-gdf add curl --to base
+gdf add curl -p base
 ```
 
 ### Verify your profile
@@ -481,17 +481,17 @@ gdf track ~/.aws/config -a aws-cli --secret
 ### Adding SRE aliases
 
 ```bash
-gdf alias k kubectl --profile sre
-gdf alias kgp "kubectl get pods" --profile sre
-gdf alias kgs "kubectl get svc" --profile sre
-gdf alias kgn "kubectl get nodes" --profile sre
-gdf alias kns "kubectl config set-context --current --namespace" --profile sre
-gdf alias tf terraform --profile sre
-gdf alias tfi "terraform init" --profile sre
-gdf alias tfp "terraform plan" --profile sre
-gdf alias tfa "terraform apply" --profile sre
-gdf alias dps "docker ps" --profile sre
-gdf alias dimg "docker images" --profile sre
+gdf alias add k kubectl -a kubectl
+gdf alias add kgp "kubectl get pods" -a kubectl
+gdf alias add kgs "kubectl get svc" -a kubectl
+gdf alias add kgn "kubectl get nodes" -a kubectl
+gdf alias add kns "kubectl config set-context --current --namespace" -a kubectl
+gdf alias add tf terraform -a terraform
+gdf alias add tfi "terraform init" -a terraform
+gdf alias add tfp "terraform plan" -a terraform
+gdf alias add tfa "terraform apply" -a terraform
+gdf alias add dps "docker ps" -a docker
+gdf alias add dimg "docker images" -a docker
 ```
 
 ### Verify the SRE profile
@@ -525,55 +525,55 @@ gdf profile create programming --description "Programming languages and dev tool
 ### Go
 
 ```bash
-gdf add go --to programming
+gdf add go -p programming
 ```
 
 If you have custom Go environment settings, you can track them. Most Go developers set environment variables via their shell, so let's edit the app bundle YAML directly to add environment variables (we'll cover YAML editing in [Editing App Bundles by Hand](#editing-app-bundles-by-hand-yaml)):
 
 ```bash
 # For now, just add the app and useful aliases
-gdf alias gotest "go test ./..." --profile programming
-gdf alias govet "go vet ./..." --profile programming
-gdf alias gobuild "go build ./..." --profile programming
+gdf alias add gotest "go test ./..." -a go
+gdf alias add govet "go vet ./..." -a go
+gdf alias add gobuild "go build ./..." -a go
 ```
 
 ### Python
 
 ```bash
-gdf add python --to programming
+gdf add python -p programming
 ```
 
 Track your Python configuration files:
 
 ```bash
 # pip configuration
-gdf track ~/.config/pip/pip.conf python
+gdf track ~/.config/pip/pip.conf -a python
 
 # If you use pylint or flake8
-gdf track ~/.config/flake8 python
+gdf track ~/.config/flake8 -a python
 ```
 
 Add Python aliases:
 
 ```bash
-gdf alias py python3 --profile programming
-gdf alias pip "python3 -m pip" --profile programming
-gdf alias venv "python3 -m venv" --profile programming
-gdf alias activate "source .venv/bin/activate" --profile programming
+gdf alias add py python3 -a python
+gdf alias add pip "python3 -m pip" -a python
+gdf alias add venv "python3 -m venv" -a python
+gdf alias add activate "source .venv/bin/activate" -a python
 ```
 
 ### Additional dev tools
 
 ```bash
-gdf add make --to programming
-gdf add ripgrep --to programming
-gdf add fzf --to programming
+gdf add make -p programming
+gdf add ripgrep -p programming
+gdf add fzf -p programming
 ```
 
 Add handy search aliases:
 
 ```bash
-gdf alias rg ripgrep --profile programming
+gdf alias add rg ripgrep -a ripgrep
 ```
 
 ### Verify
@@ -623,7 +623,7 @@ Imagine you want a single item that installs Go, Docker, Kubectl, and Terraform.
 2.  Add it to your profile:
 
     ```bash
-    gdf add backend-dev --to programming
+    gdf add backend-dev -p programming
     ```
 
 Now, when you run `gdf apply programming`, GDF sees `backend-dev`, checks its dependencies, and automatically ensures `go`, `docker`, `kubectl`, and `terraform` are also applied—even if you didn't list them explicitly in the profile.
@@ -659,8 +659,10 @@ GDF performs these operations in order:
 3. **Installs packages** — uses the appropriate package manager for your OS (Homebrew on macOS, apt on Ubuntu/Debian, dnf on Fedora).
 4. **Links dotfiles** — creates symlinks from your home directory to `~/.gdf/dotfiles/`.
 5. **Generates shell integration** — writes `~/.gdf/generated/init.sh` with all your aliases, environment variables, functions, and startup init snippets.
-6. **Logs operations** — saves a timestamped log to `~/.gdf/.operations/` for potential rollback.
-7. **Updates state** — records which profiles were applied to `~/.gdf/state.yaml` (local only).
+6. **Scans for high-risk commands** — warns and asks for confirmation before proceeding when risky hook/script patterns are detected.
+7. **Logs operations** — saves a timestamped log to `~/.gdf/.operations/` for rollback.
+8. **Captures history snapshots** — stores pre-change copies under `~/.gdf/.history/` before destructive replacement operations.
+9. **Updates state** — records which profiles were applied to `~/.gdf/state.yaml` (local only).
 
 ### Check status
 
@@ -696,6 +698,27 @@ gs        # → git status
 k         # → kubectl (if installed)
 tf        # → terraform
 py        # → python3
+```
+
+### Rollback and historical snapshots
+
+If an apply introduces a bad config change, you can rollback immediately:
+
+```bash
+gdf rollback
+```
+
+If you need to restore a specific file and choose from multiple dated snapshots:
+
+```bash
+gdf rollback --target ~/.zshrc --choose-snapshot
+```
+
+Snapshot storage uses `~/.gdf/.history/` and is quota-based. You can tune it in `~/.gdf/config.yaml`:
+
+```yaml
+history:
+  max_size_mb: 512
 ```
 
 ---
@@ -802,13 +825,13 @@ Once your setup is running, here's the typical workflow:
 
 ```bash
 # Track a new dotfile
-gdf track ~/.ssh/config ssh
+gdf track ~/.ssh/config -a ssh
 
 # Add a new alias
-gdf alias dc docker-compose
+gdf alias add dc docker-compose
 
 # Add a new tool
-gdf add helm --to sre
+gdf add helm -p sre
 
 # Save and sync
 gdf sync
@@ -836,15 +859,15 @@ Let's say you've started using **Helm** for Kubernetes package management. Here'
 
 ```bash
 # 1. Add Helm to the SRE profile
-gdf add helm --to sre
+gdf add helm -p sre
 
 # 2. If you have a Helm config, track it
-gdf track ~/.config/helm/repositories.yaml helm
+gdf track ~/.config/helm/repositories.yaml -a helm
 
 # 3. Add useful aliases
-gdf alias h helm --profile sre
-gdf alias hls "helm list" --profile sre
-gdf alias hup "helm upgrade" --profile sre
+gdf alias add h helm -a helm
+gdf alias add hls "helm list" -a helm
+gdf alias add hup "helm upgrade" -a helm
 
 # 4. Apply to get everything linked and generated
 gdf apply sre
@@ -1065,12 +1088,11 @@ This tells you which profiles are applied, how many apps are active, and when th
 
 ## What's Next?
 
-You've covered the core GDF workflow. Here's what's coming in future releases:
+You've covered the core GDF workflow. Next useful areas to explore:
 
-- **App Library** — Built-in recipes for 30+ popular tools, installable with `gdf add kubectl --from-library`.
-- **Interactive Wizards** — Guided setup with `gdf setup`.
-- **Doctor & Fix** — `gdf doctor` to diagnose issues, `gdf fix` to repair them.
-- **Rollback** — Undo an apply with `gdf rollback`.
-- **Profile Conditions** — Automatically include/exclude apps based on OS, hostname, or architecture.
+- **Library Recipes** — Browse with `gdf library list` and inspect with `gdf library describe <recipe>`.
+- **Conditional dotfiles** — Use `dotfiles[].when` and platform-specific targets in app YAML for per-host/per-OS behavior.
+- **Recovery workflows** — Use `gdf rollback` and targeted snapshot restore when testing risky changes.
+- **Upcoming commands** — Future phases include richer diagnostics and workflows like `gdf doctor`, `gdf validate`, and interactive setup tools.
 
 For complete command details, see the [CLI Reference](../reference/cli.md). For YAML syntax, see the [YAML Schema Reference](../reference/yaml-schemas.md).

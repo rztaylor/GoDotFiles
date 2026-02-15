@@ -63,14 +63,28 @@ gdf profile create base
 Track some existing dotfiles:
 
 ```bash
-gdf track ~/.gitconfig git
-gdf track ~/.zshrc zsh
+gdf track ~/.gitconfig -a git
+gdf track ~/.zshrc -a zsh
 ```
 
 Add an alias:
 
 ```bash
-gdf alias ll "ls -la"
+gdf alias add ll "ls -la"
+```
+
+Apply your profile:
+
+```bash
+gdf apply base
+```
+
+If high-risk hook/script patterns are detected during apply, GDF will show the command content and ask for confirmation before proceeding.
+
+If you need to undo the latest changes:
+
+```bash
+gdf rollback
 ```
 
 ## Next Steps

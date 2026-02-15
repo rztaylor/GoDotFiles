@@ -56,8 +56,15 @@ GDF (Go Dotfiles) is a cross-platform dotfile manager written in Go. It uses the
 ## Project Maintenance
 
 - `TASKS.md`: only pending/in-progress items.
-- `CHANGELOG.md`: keep `[Unreleased]` updated for user-facing changes.
+- `CHANGELOG.md`: keep `[Unreleased]` updated for user-facing changes only.
 - `IMPLEMENTATION_PLAN.md`: update with design/phase changes.
+
+### Changelog Writing Standard
+
+- Write changelog entries for end users, not maintainers.
+- Focus on user-visible behavior, commands, workflows, and outcomes.
+- Avoid internal implementation details (internal package names, refactors, metadata formats, test/lint/tooling changes) unless they directly affect user behavior.
+- Prefer plain language over internal terminology.
 
 ## Feature Planning Requirement
 

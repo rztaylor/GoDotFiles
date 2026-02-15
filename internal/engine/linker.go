@@ -14,11 +14,29 @@ type Linker struct {
 	// ConflictStrategy determines how to handle existing files at the target location.
 	// Options: "backup_and_replace", "replace", "error", "prompt" (prompt not implemented here, assumed resolved upstream)
 	ConflictStrategy string
+
+	history           *HistoryManager
+	conflictSnapshots map[string]*Snapshot
 }
 
 // NewLinker creates a new Linker with the given conflict strategy.
 func NewLinker(strategy string) *Linker {
-	return &Linker{ConflictStrategy: strategy}
+	return &Linker{
+		ConflictStrategy:  strategy,
+		conflictSnapshots: make(map[string]*Snapshot),
+	}
+}
+
+// SetHistoryManager configures snapshot capture for destructive operations.
+func (l *Linker) SetHistoryManager(history *HistoryManager) {
+	l.history = history
+}
+
+// ConsumeConflictSnapshot returns and clears the snapshot captured for target.
+func (l *Linker) ConsumeConflictSnapshot(target string) *Snapshot {
+	s := l.conflictSnapshots[target]
+	delete(l.conflictSnapshots, target)
+	return s
 }
 
 // Link processes a single dotfile, creating a symlink from target to source.
@@ -62,8 +80,12 @@ func (l *Linker) Link(dotfile apps.Dotfile, gdfDir string) error {
 		}
 
 		// 2. Handle conflict
-		if err := l.handleConflict(targetPath); err != nil {
+		snapshot, err := l.handleConflict(targetPath)
+		if err != nil {
 			return err
+		}
+		if snapshot != nil {
+			l.conflictSnapshots[targetPath] = snapshot
 		}
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("checking target: %w", err)
@@ -97,15 +119,28 @@ func (l *Linker) Unlink(dotfile apps.Dotfile) error {
 	return nil
 }
 
-func (l *Linker) handleConflict(path string) error {
+func (l *Linker) handleConflict(path string) (*Snapshot, error) {
+	var snapshot *Snapshot
+
 	switch l.ConflictStrategy {
 	case "error":
-		return fmt.Errorf("target already exists: %s", path)
+		return nil, fmt.Errorf("target already exists: %s", path)
 	case "replace", "force":
+		s, err := l.captureSnapshot(path)
+		if err != nil {
+			return nil, err
+		}
+		snapshot = s
 		if err := os.RemoveAll(path); err != nil {
-			return fmt.Errorf("removing existing target: %w", err)
+			return nil, fmt.Errorf("removing existing target: %w", err)
 		}
 	case "backup_and_replace":
+		s, err := l.captureSnapshot(path)
+		if err != nil {
+			return nil, err
+		}
+		snapshot = s
+
 		// Cycle backups: .bak -> .bak.1 -> .bak.2 -> .bak.3 (keep last 3)
 		const maxBackups = 3
 		for i := maxBackups - 1; i >= 0; i-- {
@@ -130,11 +165,22 @@ func (l *Linker) handleConflict(path string) error {
 		// Move current file to .bak
 		backupPath := path + ".gdf.bak"
 		if err := os.Rename(path, backupPath); err != nil {
-			return fmt.Errorf("backing up existing target: %w", err)
+			return nil, fmt.Errorf("backing up existing target: %w", err)
 		}
 	default:
 		// Default to error for safety
-		return fmt.Errorf("unknown conflict strategy '%s', defaulting to error: file exists %s", l.ConflictStrategy, path)
+		return nil, fmt.Errorf("unknown conflict strategy '%s', defaulting to error: file exists %s", l.ConflictStrategy, path)
 	}
-	return nil
+	return snapshot, nil
+}
+
+func (l *Linker) captureSnapshot(path string) (*Snapshot, error) {
+	if l.history == nil {
+		return nil, nil
+	}
+	s, err := l.history.Capture(path)
+	if err != nil {
+		return nil, fmt.Errorf("capturing history snapshot for %s: %w", path, err)
+	}
+	return s, nil
 }

@@ -44,6 +44,8 @@ Loads and validates configuration files:
 Orchestrates operations by coordinating other packages:
 - **Linker** - Dotfile symlink creation with conflict resolution strategies
 - **Logger** - Operation logging for rollback support (saved to `.operations/`)
+- **HistoryManager** - Historical file snapshot capture and retention in `.history/`
+- **Rollback** - Reversal of logged link operations with snapshot restoration
 - Profile resolution (includes, conditions)
 - Apply/unapply workflows
 - State tracking

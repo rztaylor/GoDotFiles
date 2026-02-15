@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/config"
@@ -38,10 +40,13 @@ All operations are logged to ~/.gdf/.operations/ for potential rollback.`,
 }
 
 var applyDryRun bool
+var applyAllowRisky bool
+var applyRiskConfirmationPrompt = defaultRiskConfirmationPrompt
 
 func init() {
 	rootCmd.AddCommand(applyCmd)
 	applyCmd.Flags().BoolVar(&applyDryRun, "dry-run", false, "Show what would be done without making changes")
+	applyCmd.Flags().BoolVar(&applyAllowRisky, "allow-risky", false, "Proceed without confirmation when high-risk scripts are detected")
 }
 
 func runApply(cmd *cobra.Command, args []string) error {
@@ -176,9 +181,39 @@ func runApply(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println() // Removed the extra newline from fmt.Println("\n")
 
+	// Security scan before any mutating operations.
+	findings := engine.DetectHighRiskConfigurations(resolvedApps)
+	if len(findings) > 0 {
+		fmt.Println("\n⚠️  High-risk commands detected:")
+		for i, f := range findings {
+			fmt.Printf("   %d. app=%s, location=%s\n", i+1, f.App, f.Location)
+			fmt.Printf("      reason: %s\n", f.Reason)
+			fmt.Printf("      command: %s\n", f.Command)
+		}
+
+		confirmScripts := true
+		if cfg.Security != nil {
+			confirmScripts = cfg.Security.ConfirmScriptsDefault()
+		}
+		if !applyAllowRisky && confirmScripts {
+			confirmed, err := applyRiskConfirmationPrompt(findings)
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				return fmt.Errorf("aborted due to high-risk configuration")
+			}
+		}
+	}
+
 	// Phase 5: Apply each app
 	pkgMgr := packages.ForPlatform(plat)
-	linker := engine.NewLinker(cfg.ConflictResolution.Dotfiles)
+	conflictStrategy := "error"
+	if cfg.ConflictResolution != nil {
+		conflictStrategy = cfg.ConflictResolution.DotfilesDefault()
+	}
+	linker := engine.NewLinker(conflictStrategy)
+	linker.SetHistoryManager(engine.NewHistoryManager(gdfDir, cfg.History.MaxSizeMBDefault()))
 
 	for _, bundle := range resolvedApps {
 		fmt.Printf("📦 Processing app: %s\n", bundle.Name)
@@ -241,10 +276,23 @@ func runApply(cmd *cobra.Command, args []string) error {
 					}
 				}
 				fmt.Printf("      ✓ %s → %s\n", effectiveTarget, dotfile.Source)
-				logger.Log("link", effectiveTarget, map[string]string{
+				details := map[string]string{
 					"source": dotfile.Source,
 					"app":    bundle.Name,
-				})
+					// Absolute source allows safer rollback checks.
+					"source_abs": filepath.Join(gdfDir, "dotfiles", dotfile.Source),
+				}
+				if snap := linker.ConsumeConflictSnapshot(platform.ExpandPath(effectiveTarget)); snap != nil {
+					details["snapshot_id"] = snap.ID
+					details["snapshot_path"] = snap.Path
+					details["snapshot_kind"] = snap.Kind
+					details["snapshot_link_target"] = snap.LinkTarget
+					details["snapshot_mode"] = fmt.Sprintf("%#o", uint32(snap.Mode.Perm()))
+					details["snapshot_checksum"] = snap.Checksum
+					details["snapshot_size_bytes"] = fmt.Sprintf("%d", snap.SizeBytes)
+					details["snapshot_captured_at"] = snap.CapturedAt.Format("2006-01-02T15:04:05.999999999Z07:00")
+				}
+				logger.Log("link", effectiveTarget, details)
 			}
 		}
 
@@ -328,4 +376,23 @@ func runApply(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func defaultRiskConfirmationPrompt(findings []engine.RiskFinding) (bool, error) {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false, fmt.Errorf("checking stdin: %w", err)
+	}
+	if fi.Mode()&os.ModeCharDevice == 0 {
+		return false, fmt.Errorf("high-risk configuration detected in non-interactive mode; re-run with --allow-risky to proceed")
+	}
+
+	fmt.Print("\nProceed despite these high-risk commands? [y/N]: ")
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return false, fmt.Errorf("reading confirmation input: %w", err)
+	}
+	v := strings.ToLower(strings.TrimSpace(input))
+	return v == "y" || v == "yes", nil
 }

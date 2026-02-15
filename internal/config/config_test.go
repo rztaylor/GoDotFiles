@@ -40,6 +40,8 @@ package_manager:
 security:
   confirm_scripts: true
   log_scripts: false
+history:
+  max_size_mb: 1024
 `,
 			wantShell:    "zsh",
 			wantAliases:  "error",
@@ -84,6 +86,10 @@ shell: [invalid`,
 
 			if cfg.Shell != tt.wantShell {
 				t.Errorf("Shell = %q, want %q", cfg.Shell, tt.wantShell)
+			}
+
+			if tt.name == "full config" && (cfg.History == nil || cfg.History.MaxSizeMBDefault() != 1024) {
+				t.Errorf("History.MaxSizeMBDefault() = %d, want 1024", cfg.History.MaxSizeMBDefault())
 			}
 
 			// Check conflict resolution defaults
@@ -180,4 +186,36 @@ func TestSecurityConfig_Defaults(t *testing.T) {
 	if s2.LogScriptsDefault() {
 		t.Error("LogScriptsDefault() = true, want false")
 	}
+}
+
+func TestHistoryConfig_Defaults(t *testing.T) {
+	t.Run("nil defaults to 512", func(t *testing.T) {
+		var h *HistoryConfig
+		if got := h.MaxSizeMBDefault(); got != 512 {
+			t.Fatalf("MaxSizeMBDefault() = %d, want 512", got)
+		}
+	})
+
+	t.Run("empty defaults to 512", func(t *testing.T) {
+		h := &HistoryConfig{}
+		if got := h.MaxSizeMBDefault(); got != 512 {
+			t.Fatalf("MaxSizeMBDefault() = %d, want 512", got)
+		}
+	})
+
+	t.Run("non-positive defaults to 512", func(t *testing.T) {
+		zero := 0
+		h := &HistoryConfig{MaxSizeMB: &zero}
+		if got := h.MaxSizeMBDefault(); got != 512 {
+			t.Fatalf("MaxSizeMBDefault() = %d, want 512", got)
+		}
+	})
+
+	t.Run("positive value is used", func(t *testing.T) {
+		v := 2048
+		h := &HistoryConfig{MaxSizeMB: &v}
+		if got := h.MaxSizeMBDefault(); got != 2048 {
+			t.Fatalf("MaxSizeMBDefault() = %d, want 2048", got)
+		}
+	})
 }

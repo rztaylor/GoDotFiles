@@ -24,6 +24,7 @@ description: Standardized code review checks
 - `docs/architecture/components.md`
 - `CHANGELOG.md`
 - `TASKS.md`
+- For `CHANGELOG.md`, verify entries are user-facing only (no internal implementation details).
 
 7. Produce findings by severity with file references:
 - Critical: correctness/security/data loss
