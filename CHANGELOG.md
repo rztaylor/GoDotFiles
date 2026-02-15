@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-02-15
+
 ### Added
 - Add `gdf app add --apply` for a safer add-and-apply flow with preview and confirmation.
 - Add a new user FAQ with practical setup, conflict, sync, recovery, and offboarding scenarios.
