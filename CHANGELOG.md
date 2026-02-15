@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 ### Changed
+- Improve the getting started guide with a clearer quickstart flow and valid follow-up documentation links.
+- Clarify tutorial shell setup so `gdf init` auto-injection is treated as the default path and manual RC edits are fallback-only.
 
 ### Fixed
 

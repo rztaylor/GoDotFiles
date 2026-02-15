@@ -1,94 +1,136 @@
 # Getting Started with GDF
 
-This guide walks you through setting up GDF on a new machine.
+This page is the fastest path to a working GDF setup.
 
-## Installation
+If you want deeper concepts, profile design strategy, and multi-machine workflows, continue to the [full tutorial](tutorial.md).
 
-The easiest way to install GDF on Linux or macOS is using the official install script:
+## 1. Install
+
+Install script (Linux/macOS):
 
 ```bash
 curl -sfL https://raw.githubusercontent.com/rztaylor/GoDotFiles/main/scripts/install.sh | sh
 ```
 
-### Alternative Methods
+Alternative methods:
+- Releases: [GitHub Releases](https://github.com/rztaylor/GoDotFiles/releases)
+- Source install (Go 1.21+): `go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest`
 
-- **Manual**: Download the latest release from the [Releases page](https://github.com/rztaylor/GoDotFiles/releases).
-- **From Source**: `go install github.com/rztaylor/GoDotFiles/cmd/gdf@latest` (requires Go 1.21+)
-
-## Initial Setup
-
-### Option 1: Clone Existing Dotfiles
-
-If you already have a dotfiles repository:
+Verify:
 
 ```bash
-gdf init git@github.com:username/dotfiles.git
+gdf --help
 ```
 
-This will:
-1. Clone your repository to `~/.gdf/`
-2. Detect available profiles
-3. Prompt you to apply profiles
+## 2. Initialize Repository
 
-### Option 2: Start Fresh
+Start fresh:
 
 ```bash
 gdf init
 ```
 
-This creates a new empty repository at `~/.gdf/`.
+Or clone existing dotfiles:
 
-## Shell Integration
+```bash
+gdf init git@github.com:username/dotfiles.git
+```
 
-Add this line to your `~/.bashrc` or `~/.zshrc`:
+GDF stores everything under `~/.gdf/`.
+
+## 3. Activate Shell Integration
+
+`gdf init` already prompts to add the shell source line to your RC file automatically.
+
+For the current terminal session, just load generated integration:
+
+```bash
+source ~/.gdf/generated/init.sh
+```
+
+If you skipped the init prompt (or auto-injection failed), add this to your shell RC (`~/.zshrc` or `~/.bashrc`) and reload:
 
 ```bash
 [ -f ~/.gdf/generated/init.sh ] && source ~/.gdf/generated/init.sh
-```
-
-Then reload your shell:
-
-```bash
 source ~/.zshrc  # or ~/.bashrc
 ```
 
-## Your First Profile
-
-Create a base profile:
+## 4. Create a Base Profile
 
 ```bash
-gdf profile create base
+gdf profile create base --description "Essential tools for every machine"
 ```
 
-Track some existing dotfiles:
+## 5. Add First App + Dotfile
+
+Create the app bundle, then track your config:
 
 ```bash
+gdf add git -p base
 gdf track ~/.gitconfig -a git
-gdf track ~/.zshrc -a zsh
 ```
 
-Add an alias:
+This moves your managed copy into `~/.gdf/dotfiles/git/.gitconfig` and symlinks `~/.gitconfig` to it.
+
+## 6. Add a Couple of Aliases
 
 ```bash
-gdf alias add ll "ls -la"
+gdf alias add g git
+gdf alias add gs "git status"
 ```
 
-Apply your profile:
+## 7. Preview, Apply, Verify
+
+Preview changes first:
+
+```bash
+gdf apply --dry-run base
+```
+
+Apply:
 
 ```bash
 gdf apply base
 ```
 
-If high-risk hook/script patterns are detected during apply, GDF will show the command content and ask for confirmation before proceeding.
+Verify:
 
-If you need to undo the latest changes:
+```bash
+gdf status
+gdf profile show base
+gdf alias list
+```
+
+## 8. Save and Sync (Optional but Recommended)
+
+```bash
+gdf save "Initial GDF setup"
+```
+
+If remote is configured:
+
+```bash
+gdf push
+# or use: gdf sync
+```
+
+## Recovery Commands
+
+If something goes wrong:
 
 ```bash
 gdf rollback
 ```
 
+To restore managed files back to regular files at original locations:
+
+```bash
+gdf restore
+```
+
 ## Next Steps
 
-- [Learn about Profiles](profiles.md)
-- [Understand App Bundles](apps.md)
-- [Set up Git Syncing](syncing.md)
+- Full walkthrough with concepts and use-cases: [Tutorial](tutorial.md)
+- All commands and flags: [CLI Reference](../reference/cli.md)
+- YAML fields and schema versions: [YAML Schema Reference](../reference/yaml-schemas.md)
+- Architecture and design context: [Architecture Overview](../architecture/overview.md)
