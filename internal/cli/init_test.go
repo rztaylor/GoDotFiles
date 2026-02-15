@@ -63,6 +63,25 @@ func TestCreateNewRepo(t *testing.T) {
 	if !containsString(string(content), "Placeholder created by gdf init.") {
 		t.Errorf("generated init placeholder content missing marker:\n%s", string(content))
 	}
+
+	// Check config includes full default sections.
+	configPath := filepath.Join(gdfDir, "config.yaml")
+	configContent, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("reading config.yaml: %v", err)
+	}
+	requiredConfigFields := []string{
+		"git:",
+		"package_manager:",
+		"updates:",
+		"shell_integration:",
+		"check_interval: 24h",
+	}
+	for _, field := range requiredConfigFields {
+		if !containsString(string(configContent), field) {
+			t.Errorf("config.yaml missing field: %s", field)
+		}
+	}
 }
 
 func TestCreateGitignore(t *testing.T) {

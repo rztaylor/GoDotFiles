@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -242,4 +243,87 @@ func TestShellIntegrationConfig_AutoReloadEnabledDefault(t *testing.T) {
 			t.Fatal("AutoReloadEnabledDefault() = false, want true")
 		}
 	})
+}
+
+func TestDefaultShell(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "bash", in: "bash", want: "bash"},
+		{name: "zsh", in: "zsh", want: "zsh"},
+		{name: "fish", in: "fish", want: "fish"},
+		{name: "uppercase", in: "ZSH", want: "zsh"},
+		{name: "unknown defaults to zsh", in: "tcsh", want: "zsh"},
+		{name: "empty defaults to zsh", in: "", want: "zsh"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := DefaultShell(tt.in); got != tt.want {
+				t.Fatalf("DefaultShell(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDefaultConfigYAML_IncludesAllSections(t *testing.T) {
+	content := DefaultConfigYAML("bash")
+	required := []string{
+		"kind: Config/v1",
+		"git:",
+		"remote: \"\"",
+		"branch: main",
+		"shell: bash",
+		"conflict_resolution:",
+		"aliases: last_wins",
+		"dotfiles: error",
+		"package_manager:",
+		"prefer:",
+		"macos: auto",
+		"linux: auto",
+		"wsl: auto",
+		"security:",
+		"confirm_scripts: true",
+		"log_scripts: true",
+		"history:",
+		"max_size_mb: 512",
+		"updates:",
+		"disabled: false",
+		"check_interval: 24h",
+		"shell_integration:",
+		"auto_reload_enabled: false",
+	}
+
+	for _, needle := range required {
+		if !strings.Contains(content, needle) {
+			t.Fatalf("DefaultConfigYAML missing %q:\n%s", needle, content)
+		}
+	}
+}
+
+func TestWriteDefaultConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "nested", "config.yaml")
+
+	if err := WriteDefaultConfig(path, "fish"); err != nil {
+		t.Fatalf("WriteDefaultConfig() error = %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading written config: %v", err)
+	}
+	if !strings.Contains(string(data), "shell: fish") {
+		t.Fatalf("expected shell default to be fish, got:\n%s", string(data))
+	}
+
+	cfg, err := LoadConfig(path)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if cfg.Kind != "Config/v1" {
+		t.Fatalf("kind = %q, want Config/v1", cfg.Kind)
+	}
 }

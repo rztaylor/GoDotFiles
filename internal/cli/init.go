@@ -300,25 +300,8 @@ state.yaml
 }
 
 func createInitialConfig(gdfDir string) error {
-	content := `# GDF Configuration
-# See: https://github.com/user/gdf/docs/reference/config.md
-kind: Config/v1
-
-shell: zsh
-
-conflict_resolution:
-  aliases: last_wins    # last_wins, error, or prompt
-  dotfiles: error       # error, backup_and_replace, or prompt
-
-security:
-  confirm_scripts: true
-  log_scripts: true
-
-history:
-  max_size_mb: 512
-`
 	path := filepath.Join(gdfDir, "config.yaml")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := config.WriteDefaultConfig(path, platform.DetectShell()); err != nil {
 		return fmt.Errorf("creating config.yaml: %w", err)
 	}
 	return nil

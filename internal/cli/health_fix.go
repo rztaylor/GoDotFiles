@@ -62,8 +62,7 @@ func buildFixActions(gdfDir string, findings []healthFinding, includeGuarded boo
 			})
 		case "config_missing":
 			add("config_missing", "Create default config.yaml", false, "write default ~/.gdf/config.yaml", func() error {
-				cfg := &config.Config{}
-				return cfg.Save(filepath.Join(gdfDir, "config.yaml"))
+				return config.WriteDefaultConfig(filepath.Join(gdfDir, "config.yaml"), platform.DetectShell())
 			})
 		case "state_missing":
 			add("state_missing", "Create empty state.yaml", false, "write empty ~/.gdf/state.yaml", func() error {
@@ -98,8 +97,7 @@ func buildFixActions(gdfDir string, findings []healthFinding, includeGuarded boo
 				if _, err := backupFileIfExists(path); err != nil {
 					return err
 				}
-				cfg := &config.Config{}
-				return cfg.Save(path)
+				return config.WriteDefaultConfig(path, platform.DetectShell())
 			})
 		case "state_invalid":
 			add("state_invalid", "Reset invalid state.yaml to empty state (with backup)", true, "backup invalid ~/.gdf/state.yaml, then write empty state", func() error {

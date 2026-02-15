@@ -367,6 +367,8 @@ aliases:
 
 ## Global Config Schema (`config.yaml`)
 
+`gdf init` and health config repair actions generate `config.yaml` with all supported sections and explicit default values so the available options are discoverable in-place.
+
 ```yaml
 kind: Config/v1           # Required
 # Repository settings

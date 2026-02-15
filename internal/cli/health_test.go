@@ -136,6 +136,11 @@ func TestHealthFixGuardedRepairsInvalidConfigWithBackup(t *testing.T) {
 	if !strings.Contains(string(content), "kind: Config/v1") {
 		t.Fatalf("expected rewritten config with valid kind, got: %s", string(content))
 	}
+	for _, field := range []string{"package_manager:", "updates:", "shell_integration:"} {
+		if !strings.Contains(string(content), field) {
+			t.Fatalf("expected rewritten config to include %s, got: %s", field, string(content))
+		}
+	}
 }
 
 func TestHealthFixDryRunDoesNotMutate(t *testing.T) {
