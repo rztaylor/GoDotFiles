@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-02-15
+
 ### Added
 - Add `gdf init setup` for guided first-run profile/app bootstrap with optional JSON summary output.
 - Add `gdf app import` with preview, guided mapping, and apply modes to adopt existing dotfiles and aliases.
