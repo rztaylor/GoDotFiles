@@ -1,0 +1,36 @@
+kind: Recipe/v1
+name: brew
+description: The missing package manager for macOS (and Linux)
+package:
+  custom:
+    script: |
+      if command -v brew >/dev/null 2>&1; then
+        echo "Homebrew is already installed."
+        exit 0
+      fi
+      
+      echo "Installing Homebrew..."
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      
+      # Determine shell profile to update
+      SHELL_PROFILE="$HOME/.bashrc"
+      if [ -f "$HOME/.zshrc" ]; then
+        SHELL_PROFILE="$HOME/.zshrc"
+      fi
+
+      # Add brew to path based on OS
+      if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "$SHELL_PROFILE"
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+      elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # Default for Apple Silicon, check for Intel if needed
+        if [ -f "/opt/homebrew/bin/brew" ]; then
+             echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_PROFILE"
+             eval "$(/opt/homebrew/bin/brew shellenv)"
+        elif [ -f "/usr/local/bin/brew" ]; then
+             echo 'eval "$(/usr/local/bin/brew shellenv)"' >> "$SHELL_PROFILE"
+             eval "$(/usr/local/bin/brew shellenv)"
+        fi
+      fi
+    sudo: false
+    confirm: true

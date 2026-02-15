@@ -1,11 +1,36 @@
 package packages
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/rztaylor/GoDotFiles/internal/apps"
 	"github.com/rztaylor/GoDotFiles/internal/platform"
 )
+
+type mockManager struct {
+	name           string
+	installed      bool
+	isInstalledErr error
+	installErr     error
+	installCalls   int
+}
+
+func (m *mockManager) Name() string {
+	return m.name
+}
+
+func (m *mockManager) Install(pkg string) error {
+	m.installCalls++
+	return m.installErr
+}
+
+func (m *mockManager) IsInstalled(pkg string) (bool, error) {
+	if m.isInstalledErr != nil {
+		return false, m.isInstalledErr
+	}
+	return m.installed, nil
+}
 
 func TestInstaller_SelectManager(t *testing.T) {
 	tests := []struct {
@@ -121,5 +146,41 @@ func TestInstaller_IsInstalled_Validation(t *testing.T) {
 	_, err := installer.IsInstalled(nil, &platform.Platform{OS: "macos"})
 	if err == nil {
 		t.Error("IsInstalled(nil, ...) should return error")
+	}
+}
+
+func TestInstaller_Install_SkipsAlreadyInstalled(t *testing.T) {
+	mgr := &mockManager{name: "brew", installed: true}
+	installer := &Installer{
+		custom: NewCustom(),
+		selectManager: func(pkg *apps.Package, p *platform.Platform) Manager {
+			return mgr
+		},
+	}
+
+	err := installer.Install(&apps.Package{Brew: "ripgrep"}, &platform.Platform{OS: "macos"})
+	if err != nil {
+		t.Fatalf("Install() unexpected error: %v", err)
+	}
+	if mgr.installCalls != 0 {
+		t.Fatalf("Install() called manager install %d times, want 0", mgr.installCalls)
+	}
+}
+
+func TestInstaller_Install_InstallsWhenCheckFails(t *testing.T) {
+	mgr := &mockManager{name: "brew", isInstalledErr: errors.New("probe failed")}
+	installer := &Installer{
+		custom: NewCustom(),
+		selectManager: func(pkg *apps.Package, p *platform.Platform) Manager {
+			return mgr
+		},
+	}
+
+	err := installer.Install(&apps.Package{Brew: "ripgrep"}, &platform.Platform{OS: "macos"})
+	if err != nil {
+		t.Fatalf("Install() unexpected error: %v", err)
+	}
+	if mgr.installCalls != 1 {
+		t.Fatalf("Install() called manager install %d times, want 1", mgr.installCalls)
 	}
 }

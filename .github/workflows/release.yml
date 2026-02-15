@@ -23,7 +23,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Generate Release Notes
-        run: go run scripts/extract_release_notes.go > /tmp/release_notes.md
+        run: go run ./scripts/extract-release-notes > /tmp/release_notes.md
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6

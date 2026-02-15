@@ -7,8 +7,6 @@
 
 ### Phase 2: Essential Functionality (Next Priorities)
 
-#### 2.2 Core App Library (Embedded Recipes)
-
 #### 2.3 Conditional Configuration
 - [ ] Conditional dotfile linking (evaluate 'when' field)
     - **User Story**: As a GDF user, I want to track OS-specific versions of a dotfile (e.g., `gitconfig.macos`, `gitconfig.linux`) and have them linked to the same local target (e.g., `~/.gitconfig.os`) depending on the current platform.
@@ -61,21 +59,19 @@
 - [ ] First-class Support for Profile Recipes (allow `kind: Profile/v1` in library)
 - [ ] Remote Recipe Ecosystem (Git-based Registry & Trust Model)
 
-
 ---
 
 ### Phase 4: Polish & Future Features
 
 - [ ] Secret management (age encryption)
 - [ ] Fish shell support
-- [ ] Import from chezmoi/stow/yadm
 - [ ] AI-powered recipe generation
 
 ---
 
 ## Task Management Guidelines
 
-### For AI Agents (Gemini/Antigravity)
+### For AI Agents 
 
 1. **Complete BLOCKER section first** - No Phase 1 coding until done
 2. **Pick tasks from top to bottom** within each section

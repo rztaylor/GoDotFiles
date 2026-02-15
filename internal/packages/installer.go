@@ -9,7 +9,8 @@ import (
 
 // Installer coordinates package installation across different package managers.
 type Installer struct {
-	custom *Custom
+	custom        *Custom
+	selectManager func(pkg *apps.Package, p *platform.Platform) Manager
 }
 
 // NewInstaller creates a new package installer.
@@ -17,6 +18,13 @@ func NewInstaller() *Installer {
 	return &Installer{
 		custom: NewCustom(),
 	}
+}
+
+func (i *Installer) managerFor(pkg *apps.Package, p *platform.Platform) Manager {
+	if i.selectManager != nil {
+		return i.selectManager(pkg, p)
+	}
+	return i.SelectManager(pkg, p)
 }
 
 // SelectManager returns the appropriate package manager for the given package and platform.
@@ -95,9 +103,16 @@ func (i *Installer) Install(pkg *apps.Package, p *platform.Platform) error {
 	}
 
 	// Try standard package manager first
-	mgr := i.SelectManager(pkg, p)
+	mgr := i.managerFor(pkg, p)
 
 	if mgr.Name() != "none" {
+		// Check if already installed
+		if pkgName := i.getPackageName(pkg, mgr.Name()); pkgName != "" {
+			installed, err := mgr.IsInstalled(pkgName)
+			if err == nil && installed {
+				return nil
+			}
+		}
 		// For apt with repo configuration, use special method
 		if mgr.Name() == "apt" && pkg.Apt != nil && (pkg.Apt.Repo != "" || pkg.Apt.Key != "") {
 			aptMgr := mgr.(*Apt)
@@ -126,7 +141,7 @@ func (i *Installer) IsInstalled(pkg *apps.Package, p *platform.Platform) (bool, 
 		return false, fmt.Errorf("package cannot be nil")
 	}
 
-	mgr := i.SelectManager(pkg, p)
+	mgr := i.managerFor(pkg, p)
 	if mgr.Name() == "none" {
 		// Can't check if custom script installed something
 		return false, nil

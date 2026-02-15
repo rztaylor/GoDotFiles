@@ -11,12 +11,12 @@ import (
 
 // Update performs the self-update to the latest version.
 func Update() error {
-	latest, found, err := selfupdate.DetectLatest("rztaylor/GoDotFiles")
+	latest, err := GetLatestVersion()
 	if err != nil {
 		return fmt.Errorf("error occurred while detecting version: %w", err)
 	}
-	if !found {
-		return fmt.Errorf("latest version for %s is not found", "rztaylor/GoDotFiles")
+	if latest == nil {
+		return fmt.Errorf("latest version for %s is not found", githubRepoSlug)
 	}
 
 	// Parse current version
