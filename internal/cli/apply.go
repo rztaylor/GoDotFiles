@@ -216,13 +216,32 @@ func runApply(cmd *cobra.Command, args []string) error {
 		if len(bundle.Dotfiles) > 0 {
 			fmt.Printf("   Dotfiles: %d file(s)\n", len(bundle.Dotfiles))
 			for _, dotfile := range bundle.Dotfiles {
+				if dotfile.When != "" {
+					match, err := config.EvaluateCondition(dotfile.When, plat)
+					if err != nil {
+						return fmt.Errorf("evaluating condition for dotfile %s in app %s: %w", dotfile.Source, bundle.Name, err)
+					}
+					if !match {
+						fmt.Printf("      ⏭️  skip %s (condition: %s)\n", dotfile.Source, dotfile.When)
+						continue
+					}
+				}
+
+				effectiveTarget := dotfile.EffectiveTarget(plat.OS)
+				if effectiveTarget == "" {
+					return fmt.Errorf("dotfile %s in app %s has no target for os %s", dotfile.Source, bundle.Name, plat.OS)
+				}
+
+				dotfileToLink := dotfile
+				dotfileToLink.Target = effectiveTarget
+
 				if !applyDryRun {
-					if err := linker.Link(dotfile, gdfDir); err != nil {
+					if err := linker.Link(dotfileToLink, gdfDir); err != nil {
 						return fmt.Errorf("linking %s: %w", dotfile.Source, err)
 					}
 				}
-				fmt.Printf("      ✓ %s → %s\n", dotfile.Target, dotfile.Source)
-				logger.Log("link", dotfile.Target, map[string]string{
+				fmt.Printf("      ✓ %s → %s\n", effectiveTarget, dotfile.Source)
+				logger.Log("link", effectiveTarget, map[string]string{
 					"source": dotfile.Source,
 					"app":    bundle.Name,
 				})

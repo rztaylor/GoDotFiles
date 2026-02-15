@@ -1,5 +1,11 @@
 package apps
 
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
 // Dotfile represents a configuration file to be symlinked.
 type Dotfile struct {
 	// Source is the path relative to ~/.gdf/dotfiles/
@@ -52,4 +58,56 @@ func (t *TargetMap) GetTarget(os string) string {
 		}
 	}
 	return t.Default
+}
+
+// EffectiveTarget returns the resolved target path for the provided OS.
+// If a target map is present, platform-specific values are preferred.
+func (d Dotfile) EffectiveTarget(os string) string {
+	if d.TargetMap != nil {
+		return d.TargetMap.GetTarget(os)
+	}
+	return d.Target
+}
+
+// UnmarshalYAML supports both string and map forms for dotfile.target.
+func (d *Dotfile) UnmarshalYAML(node *yaml.Node) error {
+	var aux struct {
+		Source   string    `yaml:"source"`
+		Target   yaml.Node `yaml:"target"`
+		When     string    `yaml:"when,omitempty"`
+		Template bool      `yaml:"template,omitempty"`
+		Secret   bool      `yaml:"secret,omitempty"`
+	}
+
+	if err := node.Decode(&aux); err != nil {
+		return err
+	}
+
+	d.Source = aux.Source
+	d.When = aux.When
+	d.Template = aux.Template
+	d.Secret = aux.Secret
+	d.Target = ""
+	d.TargetMap = nil
+
+	if aux.Target.Kind == 0 {
+		return nil
+	}
+
+	switch aux.Target.Kind {
+	case yaml.ScalarNode:
+		if err := aux.Target.Decode(&d.Target); err != nil {
+			return fmt.Errorf("decoding dotfile target as string: %w", err)
+		}
+	case yaml.MappingNode:
+		var targetMap TargetMap
+		if err := aux.Target.Decode(&targetMap); err != nil {
+			return fmt.Errorf("decoding dotfile target map: %w", err)
+		}
+		d.TargetMap = &targetMap
+	default:
+		return fmt.Errorf("invalid dotfile target type: expected string or map")
+	}
+
+	return nil
 }

@@ -1,4 +1,5 @@
 # Local state (machine-specific, not synced)
+/IMPLEMENTATION_PLAN.md
 state.yaml
 .env
 

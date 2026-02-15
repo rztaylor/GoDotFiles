@@ -59,6 +59,20 @@ GDF (Go Dotfiles) is a cross-platform dotfile manager written in Go. It uses the
 - `CHANGELOG.md`: keep `[Unreleased]` updated for user-facing changes.
 - `IMPLEMENTATION_PLAN.md`: update with design/phase changes.
 
+## Feature Planning Requirement
+
+For every new feature request, create an implementation plan in markdown before writing code.
+
+The implementation plan must include:
+- Understanding of the requested task and scope.
+- Planned implementation approach (phases/steps).
+- Key points that require user confirmation before implementation.
+- Important assumptions, risks, or constraints the user should know before implementation starts.
+- User scenarios and use cases (when applicable) that show understanding of the feature behavior.
+
+After creating the implementation plan, explicitly ask the user for confirmation to proceed.
+Do not start implementation until the user explicitly approves the plan and asks you to continue.
+
 ## Task Completion Flow
 
 1. Mark task in-progress in `TASKS.md` (`[ ]` -> `[/]`).

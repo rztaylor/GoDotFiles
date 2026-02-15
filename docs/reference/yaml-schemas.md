@@ -64,7 +64,11 @@ dotfiles:
   # Conditional dotfiles
   - source: string
     target: string
-    when: string          # Condition: "os == 'macos'", "hostname =~ 'work-.*'"
+    when: string          # Condition expression:
+                          # "os == 'macos'"
+                          # "hostname =~ '^work-.*'"
+                          # "os == 'linux' OR os == 'wsl'"
+                          # "(os == 'linux' OR os == 'wsl') AND arch == 'amd64'"
     
   # Template rendering
   - source: string
@@ -205,6 +209,11 @@ dotfiles:
   - source: kube/config.work
     target: ~/.kube/config.d/work
     when: hostname =~ '^work-.*'
+
+  # Linux + WSL shared config
+  - source: kube/config.posix
+    target: ~/.kube/config.d/posix
+    when: os == 'linux' OR os == 'wsl'
 ```
 
 ---

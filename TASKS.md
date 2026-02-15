@@ -7,11 +7,6 @@
 
 ### Phase 2: Essential Functionality (Next Priorities)
 
-#### 2.3 Conditional Configuration
-- [ ] Conditional dotfile linking (evaluate 'when' field)
-    - **User Story**: As a GDF user, I want to track OS-specific versions of a dotfile (e.g., `gitconfig.macos`, `gitconfig.linux`) and have them linked to the same local target (e.g., `~/.gitconfig.os`) depending on the current platform.
-- [ ] Template rendering with documented variables
-
 #### 2.4 App Lifecycle & Cleanup
 - [ ] Implement `Uninstall(pkg)` in `packages.Manager` interface
 - [ ] Implement `gdf remove --uninstall` to prompt for package removal

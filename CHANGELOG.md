@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 - **Managed Shell Init Snippets**: Add `shell.init` support in app bundles so PATH/setup commands are generated into `~/.gdf/generated/init.sh` during `gdf apply`.
+- **Conditional Dotfile Expressions**: `dotfiles[].when` now supports boolean expressions with `AND`/`OR` and parentheses.
+- **Platform Target Map Resolution**: Dotfile `target` map form (`default`/`macos`/`linux`/`wsl`) is now resolved during `gdf apply`.
 
 ### Changed
 - **Shell Integration Generation**: Generated init script now includes app startup tasks alongside aliases, env vars, functions, and completions.
